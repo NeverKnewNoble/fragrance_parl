@@ -1,14 +1,8 @@
-import { Package, Truck, CheckCircle, Clock, XCircle, LucideIcon } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { OrderStatus, Order } from '@/types/order';
+import { StatusConfig } from '@/types/order';
 
-//!! Status configuration interface
-export interface StatusConfig {
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  label: string;
-}
+
 
 //!! Get status icon and color configuration
 //!! Returns the appropriate icon, colors, and label for each order status

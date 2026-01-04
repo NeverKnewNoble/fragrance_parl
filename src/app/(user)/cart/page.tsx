@@ -61,7 +61,7 @@ export default function CartPage() {
   //!! Handle checkout
   const handleCheckout = () => {
     // TODO: Implement checkout functionality
-    router.push('/checkout');
+    router.push('/cart/checkout');
   };
 
   //!! Show loading state
@@ -84,7 +84,7 @@ export default function CartPage() {
   return (
     <div className="relative">
       <Navbar />
-      <section className="relative w-full overflow-hidden bg-white py-10 sm:py-20 lg:py-24 min-h-screen">
+      <section className="relative w-full overflow-hidden bg-white pt-24 pb-10 sm:pt-28 sm:pb-20 lg:pb-24 min-h-screen">
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
           <div className="mb-8 sm:mb-12">
@@ -113,7 +113,7 @@ export default function CartPage() {
                 {cartItems.map((item, index) => (
                   <div
                     key={`${item.product.title}-${item.size_ml}-${index}`}
-                    className="rounded-[32px] border border-gray-200 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
+                    className="rounded-4xl border border-gray-200 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
                       {/* Product Image */}
@@ -200,7 +200,7 @@ export default function CartPage() {
 
               {/* Order Summary */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 rounded-[32px] border border-gray-200 bg-white p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+                <div className="sticky top-24 rounded-4xl border border-gray-200 bg-white p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
                   <h2 className="mb-6 text-xl font-bold text-gray-900">Order Summary</h2>
 
                   {/* Summary Details */}

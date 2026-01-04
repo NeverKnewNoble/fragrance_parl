@@ -45,10 +45,17 @@ export default function ProductDetailPage() {
 
   //!! Handle add to cart functionality
   const handleAddToCartClick = () => {
-    handleAddToCart(product.title);
-    // Additional logic for size and quantity can be added here
-    console.log(`Size: ${selectedSize.ml}ml, Quantity: ${quantity}`);
-    // TODO: Implement cart functionality with size and quantity
+    handleAddToCart({
+      product: {
+        id: product.id,
+        title: product.title,
+        size_ml: selectedSize.ml,
+        price: selectedSize.price,
+        image: product.image,
+      },
+      quantity,
+      size_ml: selectedSize.ml,
+    });
   };
 
   //!! Handle share functionality
@@ -87,7 +94,7 @@ export default function ProductDetailPage() {
           {/* Main Product Section */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12 mb-16">
             {/* Left: Product Image */}
-            <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-gray-100">
+            <div className="relative aspect-square w-full overflow-hidden rounded-4xl bg-gray-100">
               {product.image ? (
                 <Image
                   src={product.image}
@@ -138,7 +145,7 @@ export default function ProductDetailPage() {
                 <div className="space-y-4">
                   {product.notes.top.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-500">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
                         Top Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -155,7 +162,7 @@ export default function ProductDetailPage() {
                   )}
                   {product.notes.middle.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-500">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
                         Heart Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -172,7 +179,7 @@ export default function ProductDetailPage() {
                   )}
                   {product.notes.base.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-gray-500">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
                         Base Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -281,7 +288,7 @@ export default function ProductDetailPage() {
                     size_ml={relatedProduct.size_ml}
                     price={relatedProduct.price}
                     image={relatedProduct.image}
-                    onAddToCart={() => handleAddToCart(relatedProduct.title)}
+                    onAddToCart={() => handleAddToCart({ product: relatedProduct })}
                     className="w-full"
                   />
                 ))}

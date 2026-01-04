@@ -5,12 +5,45 @@ import { useState, useRef, useEffect } from 'react';
 import { Menu, X, ShoppingCart, ChevronDown, User, LogOut, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/auth';
+import { loadCart } from '@/utils/cartStorage';
+import { CartItem } from '@/types/cart';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!user || loading) {
+      setCartCount(0);
+      return;
+    }
+
+    const updateCartCount = () => {
+      const cart = loadCart(user.id) as CartItem[];
+      const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      setCartCount(count);
+    };
+
+    updateCartCount();
+
+    const handleCartUpdated = () => updateCartCount();
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === `cart_${user.id}`) {
+        updateCartCount();
+      }
+    };
+
+    window.addEventListener('cart_updated', handleCartUpdated);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('cart_updated', handleCartUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [user, loading]);
 
 
   //!! Close dropdown when clicking outside
@@ -51,7 +84,7 @@ export function Navbar() {
   return (
     <header className="fixed top-6 left-0 right-0 z-50 flex w-full justify-center pointer-events-none px-3 sm:px-4">
       {/* Pill-shaped navbar container */}
-      <nav className="flex w-full max-w-[800px] items-center justify-between gap-3 rounded-full border border-white/20 bg-black/60 backdrop-blur-xl px-4 sm:px-5 py-2.5 shadow-[0_22px_70px_rgba(0,0,0,0.85)] mx-auto pointer-events-auto">
+      <nav className="flex w-full max-w-200 items-center justify-between gap-3 rounded-full border border-white/20 bg-black/60 backdrop-blur-xl px-4 sm:px-5 py-2.5  mx-auto pointer-events-auto">
         {/* Brand */}
         <Link
           href="/"
@@ -98,6 +131,11 @@ export function Navbar() {
                     className="group relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0] hover:-translate-y-px active:translate-y-0"
                   >
                     <ShoppingCart className="h-4 w-4" />
+                    {cartCount >= 1 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold leading-none text-black shadow-[0_10px_26px_rgba(0,0,0,0.35)]">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* User dropdown menu */}
@@ -107,7 +145,7 @@ export function Navbar() {
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0] hover:-translate-y-px active:translate-y-0"
                     >
-                      <span className="max-w-[100px] truncate">{getUserName()}</span>
+                      <span className="max-w-25 truncate">{getUserName()}</span>
                       <ChevronDown
                         className={`h-3 w-3 transition-transform duration-200 ${
                           isUserMenuOpen ? 'rotate-180' : ''
@@ -179,8 +217,8 @@ export function Navbar() {
 
       {/* Mobile dropdown menu */}
       {isOpen && (
-        <div className="absolute top-[72px] left-0 right-0 z-40 px-3 sm:px-4 md:hidden pointer-events-none">
-          <div className="mx-auto w-full max-w-[800px] rounded-3xl border border-white/15 bg-black/85 px-4 py-4 shadow-[0_22px_60px_rgba(0,0,0,0.9)] backdrop-blur-xl pointer-events-auto">
+        <div className="absolute top-18 left-0 right-0 z-40 px-3 sm:px-4 md:hidden pointer-events-none">
+          <div className="mx-auto w-full max-w-200 rounded-3xl border border-white/15 bg-black/85 px-4 py-4 shadow-[0_22px_60px_rgba(0,0,0,0.9)] backdrop-blur-xl pointer-events-auto">
             <div className="flex flex-col gap-3 text-sm text-white/85">
               <Link
                 href="/"
@@ -216,7 +254,12 @@ export function Navbar() {
                       onClick={() => setIsOpen(false)}
                     >
                       <ShoppingCart className="h-4 w-4" />
-                      Cart
+                      <span className="flex-1">Cart</span>
+                      {cartCount >= 1 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold leading-none text-black">
+                          {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                      )}
                     </Link>
                     <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/25 bg-white/5 px-3 py-2">
                       <span className="text-[11px] font-semibold text-white/85 truncate">

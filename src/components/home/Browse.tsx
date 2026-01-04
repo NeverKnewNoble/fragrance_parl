@@ -2,7 +2,7 @@
 
 import { ProductCard } from "@/components/ui/product-card";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { handleAddToCart } from "@/utils/addToCart";
 import { browseProducts, fragranceFamiliesFilter } from "@/utils/sampleData";
 import { filterProducts } from "@/utils/filterProducts";
@@ -13,6 +13,9 @@ export function Browse() {
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [selectedSize, setSelectedSize] = useState("all");
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const PRODUCTS_PER_PAGE = 9; // 3 rows × 3 columns
 
   //!! Filter products based on selected filters
   const filteredProducts = filterProducts(browseProducts, {
@@ -37,6 +40,18 @@ export function Browse() {
       },
     },
   });
+
+  //!! Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  //!! Reset to page 1 when filters change
+  const handleFilterChange = (filterSetter: (value: any) => void, value: any) => {
+    filterSetter(value);
+    setCurrentPage(1);
+  };
 
 
   
@@ -67,7 +82,7 @@ export function Browse() {
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
                 isFiltersOpen
-                  ? "max-h-[2000px] opacity-100"
+                  ? "max-h-500 opacity-100"
                   : "max-h-0 opacity-0"
               }`}
             >
@@ -90,7 +105,7 @@ export function Browse() {
                             name="fragrance-family"
                             value={family.value}
                             checked={selectedFamily === family.value}
-                            onChange={(e) => setSelectedFamily(e.target.value)}
+                            onChange={(e) => handleFilterChange(setSelectedFamily, e.target.value)}
                             className="h-4 w-4 cursor-pointer border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]/50"
                           />
                           {Icon && (
@@ -117,9 +132,9 @@ export function Browse() {
                       max="1000"
                       step="10"
                       value={priceRange[1]}
-                      onChange={(e) =>
-                        setPriceRange([priceRange[0], Number(e.target.value)])
-                      }
+                      onChange={(e) => {
+                        handleFilterChange(setPriceRange, [priceRange[0], Number(e.target.value)]);
+                      }}
                       className="price-range-slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 transition-all duration-200 hover:bg-gray-300"
                     />
                     <div className="mt-3 flex items-center justify-between text-xs font-medium text-gray-600">
@@ -145,7 +160,7 @@ export function Browse() {
                           name="bottle-size"
                           value={size}
                           checked={selectedSize === size}
-                          onChange={(e) => setSelectedSize(e.target.value)}
+                          onChange={(e) => handleFilterChange(setSelectedSize, e.target.value)}
                           className="h-4 w-4 cursor-pointer border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]/50"
                         />
                         <span className="text-sm font-medium text-gray-700 transition-colors duration-200 group-hover:text-gray-900">
@@ -171,19 +186,83 @@ export function Browse() {
 
             {/* Products Grid */}
             {filteredProducts.length > 0 ? (
+              <>
               <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredProducts.map((product, index) => (
+                {currentProducts.map((product, index) => (
                   <ProductCard
                     key={`${product.title}-${index}`}
                     title={product.title}
                     size_ml={product.size_ml}
                     price={product.price}
                     image={product.image}
-                    onAddToCart={() => handleAddToCart(product.title)}
+                    onAddToCart={() => handleAddToCart({ product })}
                     className="w-full"
                   />
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex items-center justify-center gap-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition-all duration-200 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:bg-white"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      const showPage =
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1);
+
+                      if (!showPage) {
+                        // Show ellipsis
+                        if (page === currentPage - 2 || page === currentPage + 2) {
+                          return (
+                            <span key={page} className="px-2 text-gray-400">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`min-w-10 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                            currentPage === page
+                              ? "bg-linear-to-r from-[#D4AF37] to-[#e3c55d] text-white shadow-lg shadow-[#D4AF37]/30"
+                              : "border border-gray-300 bg-white text-gray-700 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 transition-all duration-200 hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:bg-white"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="text-lg font-medium text-gray-500">
@@ -194,6 +273,7 @@ export function Browse() {
                     setSelectedFamily("all");
                     setPriceRange([0, 1000]);
                     setSelectedSize("all");
+                    setCurrentPage(1);
                   }}
                   className="mt-4 text-sm font-semibold text-[#D4AF37] transition-colors duration-200 hover:text-[#D4AF37]/80"
                 >

@@ -71,7 +71,7 @@ export function ProductCard({
   return (
     <div
       className={cnUtil(
-        'group relative flex flex-col rounded-[32px] bg-gradient-to-br from-gray-100 to-gray-50',
+        'group relative flex flex-col rounded-4xl bg-linear-to-br from-gray-100 to-gray-50',
         'shadow-[0_8px_32px_rgba(0,0,0,0.08)]',
         'transition-all duration-500 ease-out',
         'hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]',
@@ -85,7 +85,7 @@ export function ProductCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Product Image Container - Fills entire card */}
-      <div className="relative w-full min-h-[350px] sm:min-h-[400px] md:min-h-[500px] overflow-hidden flex flex-col">
+      <div className="relative w-full min-h-87.5 sm:min-h-100 md:min-h-125 overflow-hidden flex flex-col">
         {/* Favorite Button - Top Right */}
         <button
           onClick={handleToggleFavorite}
@@ -114,7 +114,7 @@ export function ProductCard({
                 onError={() => setImageError(true)}
               />
               {/* Dark overlay gradient from bottom to middle */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/50 to-transparent pointer-events-none" />
             </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-200">

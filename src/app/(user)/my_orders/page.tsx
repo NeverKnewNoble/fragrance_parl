@@ -125,7 +125,7 @@ export default function MyOrdersPage() {
                 return (
                   <div
                     key={order.id}
-                    className="rounded-[32px] border border-gray-200 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
+                    className="rounded-4xl border border-gray-200 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
                   >
                     {/* Order Header */}
                     <div className="bg-linear-to-r from-gray-50 to-white px-6 sm:px-8 py-4 sm:py-5 border-b border-gray-200">

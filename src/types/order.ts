@@ -1,4 +1,5 @@
 import { SimpleProduct } from '@/utils/sampleData';
+import { LucideIcon } from 'lucide-react';
 
 //!! Order status type
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -24,3 +25,11 @@ export interface Order {
   trackingNumber?: string;
 }
 
+//!! Status configuration interface
+export interface StatusConfig {
+  icon: LucideIcon;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  label: string;
+}

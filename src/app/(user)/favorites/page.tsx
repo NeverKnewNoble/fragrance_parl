@@ -103,7 +103,7 @@ export default function FavoritesPage() {
                     size_ml={product.size_ml}
                     price={product.price}
                     image={product.image}
-                    onAddToCart={() => handleAddToCart(product.title)}
+                    onAddToCart={() => handleAddToCart({ product })}
                     className="w-full"
                   />
                   {/* Remove from favorites button */}

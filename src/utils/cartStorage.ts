@@ -20,6 +20,9 @@ export const loadCart = (userId: string): CartItem[] => {
 export const saveCart = (userId: string, cart: CartItem[]): void => {
   try {
     localStorage.setItem(`cart_${userId}`, JSON.stringify(cart));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cart_updated'));
+    }
   } catch (error) {
     console.error('Error saving cart:', error);
   }
@@ -84,6 +87,9 @@ export const updateCartItemQuantity = (
 //!! Removes all items from the cart
 export const clearCart = (userId: string): void => {
   localStorage.removeItem(`cart_${userId}`);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('cart_updated'));
+  }
 };
 
 //!! Calculate cart totals

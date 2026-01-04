@@ -80,7 +80,7 @@ export function NewArrivals() {
             </div>
 
             {/* Products Scroll Container - Shows only 3 cards */}
-            <div className="overflow-hidden max-w-full sm:max-w-[888px] lg:max-w-[948px] px-4 sm:px-0">
+            <div className="overflow-hidden max-w-full sm:max-w-222 lg:max-w-237 px-4 sm:px-0">
               <div
                 ref={scrollContainerRef}
                 className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
@@ -95,8 +95,8 @@ export function NewArrivals() {
                       size_ml={product.size_ml}
                       price={product.price}
                       image={product.image}
-                      onAddToCart={() => handleAddToCart(product.title)}
-                      className="w-[280px] sm:w-[300px]"
+                      onAddToCart={() => handleAddToCart({ product })}
+                      className="w-70 sm:w-75"
                     />
                   </div>
                 ))}

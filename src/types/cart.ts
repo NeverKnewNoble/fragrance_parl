@@ -7,3 +7,8 @@ export interface CartItem {
   size_ml: number;
 }
 
+export type AddToCartInput = {
+  product: SimpleProduct;
+  quantity?: number;
+  size_ml?: number;
+};

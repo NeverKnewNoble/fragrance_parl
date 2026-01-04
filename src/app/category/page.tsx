@@ -27,7 +27,7 @@ export default function CategoryPage() {
   return (
     <div className="relative">
       <Navbar />
-      <section className="relative w-full overflow-hidden bg-white py-10 sm:py-20 lg:py-24 min-h-screen">
+      <section className="relative w-full overflow-hidden bg-white pt-24 pb-10 sm:pt-28 sm:pb-20 lg:pb-24 min-h-screen">
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col  gap-6 sm:gap-8 lg:flex-row lg:items-start lg:gap-12">
             {/* Left Side - Fragrance Family Cards */}
@@ -52,7 +52,7 @@ export default function CategoryPage() {
               <div
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   isFiltersOpen
-                    ? "max-h-[2000px] opacity-100"
+                    ? "max-h-500 opacity-100"
                     : "max-h-0 opacity-0"
                 }`}
               >
@@ -183,7 +183,7 @@ export default function CategoryPage() {
 
               {/* Products Scroll Container */}
               {currentProducts.length > 0 ? (
-                <div className="overflow-hidden max-w-full sm:max-w-[888px] lg:max-w-[948px] px-4 sm:px-0">
+                <div className="overflow-hidden max-w-full sm:max-w-222 lg:max-w-237 px-4 sm:px-0">
                   <div
                     ref={scrollContainerRef}
                     className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
@@ -199,8 +199,8 @@ export default function CategoryPage() {
                           price={product.price}
                           image={product.image}
                           productId={product.id}
-                          onAddToCart={() => handleAddToCart(product.title)}
-                          className="w-[280px] sm:w-[300px]"
+                          onAddToCart={() => handleAddToCart({ product })}
+                          className="w-70 sm:w-75"
                         />
                       </div>
                     ))}

@@ -42,6 +42,16 @@ export interface FragranceFamilyFilter {
   icon: LucideIcon | null;
 }
 
+export interface SampleCartItem {
+  product: SimpleProduct;
+  quantity: number;
+  size_ml: number;
+}
+
+
+
+
+
 //!! Fragrance families data (for category page)
 export const fragranceFamilies: FragranceFamily[] = [
   {
@@ -227,6 +237,20 @@ export const browseProducts: SimpleProduct[] = [
     image: '/images/golden_bloom.jpg',
     family: 'oriental',
   },
+  {
+    title: 'Sandalwood Dreams',
+    size_ml: 50,
+    price: 130,
+    image: '/images/golden_bloom.jpg',
+    family: 'woody',
+  },
+  {
+    title: 'Amber Nights',
+    size_ml: 75,
+    price: 140,
+    image: '/images/golden_bloom.jpg',
+    family: 'oriental',
+  },
 ];
 
 //!! Detailed product data (Product detail page)
@@ -295,6 +319,31 @@ export const relatedProducts: SimpleProduct[] = [
   { title: 'Velvet Rose', size_ml: 50, price: 135, image: '/images/golden_bloom.jpg' },
   { title: 'Jasmine Dreams', size_ml: 100, price: 150, image: '/images/golden_bloom.jpg' },
   { title: 'Peony Petals', size_ml: 75, price: 125, image: '/images/golden_bloom.jpg' },
+];
+
+export const sampleCartItems: SampleCartItem[] = [
+  {
+    product: {
+      id: 'golden-bloom',
+      title: 'Golden Bloom',
+      size_ml: 75,
+      price: 120,
+      image: '/images/golden_bloom.jpg',
+    },
+    quantity: 1,
+    size_ml: 75,
+  },
+  {
+    product: {
+      id: 'noir-mystique',
+      title: 'Noir Mystique',
+      size_ml: 100,
+      price: 165,
+      image: '/images/golden_bloom.jpg',
+    },
+    quantity: 2,
+    size_ml: 100,
+  },
 ];
 
 //!! Sample orders data (My Orders page)
