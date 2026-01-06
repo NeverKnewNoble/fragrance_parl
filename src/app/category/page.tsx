@@ -8,20 +8,46 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  Flower2,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { scrollLeft, scrollRight } from "@/utils/scrollFunctions";
 import { handleAddToCart } from "@/utils/addToCart";
-import { fragranceFamilies, productsByFamily } from "@/utils/sampleData";
+import { productsByFamily } from "@/utils/sampleData";
+import { fetchAllFragranceFamilies } from "@/utils/fragranceFamilies";
+import { fragrance_family } from "@/types/family_fragrance";
+import * as LucideIcons from "lucide-react";
 
 export default function CategoryPage() {
+  const [families, setFamilies] = useState<fragrance_family[]>([]);
   const [selectedFamily, setSelectedFamily] = useState("floral");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const currentProducts = productsByFamily[selectedFamily] || [];
-  const selectedFamilyData = fragranceFamilies.find(
-    (f) => f.id === selectedFamily
+  const selectedFamilyData = families.find(
+    (f) => f.name.toLowerCase() === selectedFamily
   );
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+
+  useEffect(() => {
+    const loadFamilies = async () => {
+      try {
+        const fetchedFamilies = await fetchAllFragranceFamilies();
+        setFamilies(fetchedFamilies);
+        if (fetchedFamilies.length > 0 && !selectedFamily) {
+          setSelectedFamily(fetchedFamilies[0].name.toLowerCase());
+        }
+      } catch (error) {
+        console.error("Failed to load fragrance families:", error);
+      }
+    };
+    void loadFamilies();
+  }, []);
+
+  const getIconComponent = (iconName?: string) => {
+    if (!iconName) return Flower2;
+    const IconComponent = (LucideIcons as any)[iconName];
+    return IconComponent || Flower2;
+  };
 
   //!! Return the category page
   return (
@@ -56,69 +82,40 @@ export default function CategoryPage() {
                     : "max-h-0 opacity-0"
                 }`}
               >
-                <div className={isFiltersOpen ? "space-y-8" : "space-y-0 mb-8"}>
-                  {fragranceFamilies.map((family) => {
-                    const Icon = family.icon;
-                    const isSelected = selectedFamily === family.id;
+                <div className={isFiltersOpen ? "space-y-4" : "space-y-0 mb-8"}>
+                  {families.map((family) => {
+                    const Icon = getIconComponent(family.icon);
+                    const familyId = family.name.toLowerCase();
+                    const isSelected = selectedFamily === familyId;
 
                     return (
                       <button
-                        key={family.id}
-                        onClick={() => setSelectedFamily(family.id)}
-                        className={`w-full text-left rounded-lg border-2 transition-all duration-300 p-5 hover:shadow-lg ${
+                        key={family.name}
+                        onClick={() => setSelectedFamily(familyId)}
+                        className={`w-full text-left rounded-lg border-2 transition-all duration-300 p-4 hover:shadow-lg ${
                           isSelected
                             ? "border-[#D4AF37] bg-[#D4AF37]/5 shadow-md"
                             : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-center gap-3">
                           <div
-                            className={`shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                            className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-200 ${
                               isSelected
                                 ? "bg-[#D4AF37]/20 text-[#D4AF37]"
                                 : "bg-gray-100 text-gray-600"
                             }`}
                           >
-                            <Icon className="h-6 w-6" />
+                            <Icon className="h-5 w-5" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3
-                              className={`text-xl font-bold mb-1 transition-colors duration-200 ${
+                              className={`text-base font-bold transition-colors duration-200 ${
                                 isSelected ? "text-[#D4AF37]" : "text-gray-900"
                               }`}
                             >
                               {family.name}
                             </h3>
-                            <p className="text-xs text-gray-600 leading-relaxed mb-3 line-clamp-2">
-                              {family.description}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {family.characteristics
-                                .slice(0, 3)
-                                .map((char) => (
-                                  <span
-                                    key={char}
-                                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors duration-200 ${
-                                      isSelected
-                                        ? "bg-[#D4AF37]/10 text-[#D4AF37]"
-                                        : "bg-gray-100 text-gray-600"
-                                    }`}
-                                  >
-                                    {char}
-                                  </span>
-                                ))}
-                              {family.characteristics.length > 3 && (
-                                <span
-                                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors duration-200 ${
-                                    isSelected
-                                      ? "bg-[#D4AF37]/10 text-[#D4AF37]"
-                                      : "bg-gray-100 text-gray-600"
-                                  }`}
-                                >
-                                  +{family.characteristics.length - 3}
-                                </span>
-                              )}
-                            </div>
                           </div>
                         </div>
                       </button>
@@ -132,33 +129,21 @@ export default function CategoryPage() {
             <div className="relative flex-1 -mx-4 sm:mx-0">
               {/* Section Header */}
               <div className="mb-6 px-4 sm:px-0">
-                {selectedFamilyData && (
-                  <>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center">
-                        {selectedFamilyData.icon && (
-                          <selectedFamilyData.icon className="h-5 w-5 text-[#D4AF37]" />
-                        )}
+                {selectedFamilyData && (() => {
+                  const Icon = getIconComponent(selectedFamilyData.icon);
+                  return (
+                    <>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center">
+                          <Icon className="h-5 w-5 text-[#D4AF37]" />
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-black">
+                          {selectedFamilyData.name}
+                        </h2>
                       </div>
-                      <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-black">
-                        {selectedFamilyData.name}
-                      </h2>
-                    </div>
-                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4">
-                      {selectedFamilyData.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedFamilyData.characteristics.map((char) => (
-                        <span
-                          key={char}
-                          className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 font-medium"
-                        >
-                          {char}
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Navigation Buttons - Hidden on mobile, shown on larger screens */}

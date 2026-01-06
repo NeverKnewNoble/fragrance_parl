@@ -2,25 +2,125 @@
 
 import { useEffect, useState } from "react";
 import { Product } from "@/types/product";
-import { deleteProduct, loadProducts, updateProduct } from "@/utils/productStorage";
+import { supabase } from "@/lib/supabase/client";
 import { Trash2, Image as ImageIcon } from "lucide-react";
 
 const ProductList = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select(`
+          id,
+          name,
+          description,
+          slug,
+          is_active,
+          fragrance_families(name),
+          product_images(image_url, is_primary),
+          product_variants(size_ml)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      const formattedProducts: Product[] = (productsData || []).map((p: any) => {
+        const primaryImage = p.product_images?.find((img: any) => img.is_primary);
+        const images = p.product_images?.map((img: any) => img.image_url) || [];
+        const sizes = p.product_variants?.map((v: any) => v.size_ml).sort((a: number, b: number) => a - b) || [];
+
+        return {
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          slug: p.slug,
+          isActive: p.is_active,
+          fragranceFamily: p.fragrance_families?.name || 'Unknown',
+          sizes: sizes,
+          images: images,
+        };
+      });
+
+      setProducts(formattedProducts);
+    } catch (err: any) {
+      console.error('Error fetching products:', err);
+      setError(err.message || 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setProducts(loadProducts());
+    fetchProducts();
   }, []);
 
-  const handleToggleActive = (productId: string, next: boolean) => {
-    const updated = updateProduct(productId, { isActive: next });
-    setProducts(updated);
+  const handleToggleActive = async (productId: string, next: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: next })
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(prev => 
+        prev.map(p => p.id === productId ? { ...p, isActive: next } : p)
+      );
+    } catch (err: any) {
+      console.error('Error updating product:', err);
+      alert('Failed to update product status');
+    }
   };
 
-  const handleDelete = (productId: string) => {
-    const updated = deleteProduct(productId);
-    setProducts(updated);
+  const handleDelete = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product? This will also delete all related images, variants, and notes.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(prev => prev.filter(p => p.id !== productId));
+    } catch (err: any) {
+      console.error('Error deleting product:', err);
+      alert('Failed to delete product');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+        <p className="mt-4 text-sm text-gray-600">Loading products...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-base font-medium text-red-600">Error: {error}</p>
+        <button
+          onClick={fetchProducts}
+          className="mt-4 px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#c49d2f] transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (products.length === 0) {
     return (
@@ -55,12 +155,20 @@ const ProductList = () => {
                       src={product.images[0]}
                       alt={product.name}
                       className="h-12 w-12 rounded-lg object-cover border border-gray-200"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const placeholder = target.nextElementSibling as HTMLElement;
+                        if (placeholder) placeholder.style.display = 'flex';
+                      }}
                     />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
-                      <ImageIcon className="h-6 w-6 text-gray-400" />
-                    </div>
-                  )}
+                  ) : null}
+                  <div 
+                    className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200"
+                    style={{ display: product.images.length > 0 ? 'none' : 'flex' }}
+                  >
+                    <ImageIcon className="h-6 w-6 text-gray-400" />
+                  </div>
                   <div>
                     <p className="font-semibold text-sm text-black">{product.name}</p>
                     <p className="text-xs text-gray-500">{product.slug}</p>
@@ -76,7 +184,20 @@ const ProductList = () => {
                 </span>
               </td>
               <td className="py-4 px-4">
-                <span className="text-sm font-medium text-black">{product.size_ml} ml</span>
+                <div className="flex flex-wrap gap-1">
+                  {product.sizes.length > 0 ? (
+                    product.sizes.map((size, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
+                      >
+                        {size}ml
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-400">No sizes</span>
+                  )}
+                </div>
               </td>
               <td className="py-4 px-4">
                 <label className="relative inline-flex items-center cursor-pointer">

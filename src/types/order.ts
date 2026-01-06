@@ -33,3 +33,24 @@ export interface StatusConfig {
   borderColor: string;
   label: string;
 }
+
+
+export type OrderWithItems = {
+  id: number;
+  user_id: string | null;
+  order_number: string;
+  status: string;
+  subtotal: number;
+  delivery_fee: number;
+  total: number;
+  payment_status: string;
+  created_at: string;
+  order_items: Array<{
+    id: number;
+    order_id: number;
+    product_name: string;
+    size_ml: number;
+    quantity: number;
+    price: number;
+  }>;
+};

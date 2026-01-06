@@ -20,7 +20,7 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string, name?: string) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -30,11 +30,21 @@ export async function signUp(email: string, password: string, name?: string) {
     },
   });
 
-  if (error) {
-    throw error;
+  if (authError) {
+    throw authError;
   }
 
-  return data;
+  if (authData.user?.id) {
+    const { error: roleError } = await supabase.from('user_role').insert([
+      { user_id: authData.user.id, role: 'user' },
+    ]);
+
+    if (roleError) {
+      throw roleError;
+    }
+  }
+
+  return authData;
 }
 
 export async function signOut() {

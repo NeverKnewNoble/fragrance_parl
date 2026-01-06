@@ -1,14 +1,18 @@
 "use client";
 
 import { ProductCard } from "@/components/ui/product-card";
-import { useState } from "react";
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flower2 } from "lucide-react";
 import { handleAddToCart } from "@/utils/addToCart";
-import { browseProducts, fragranceFamiliesFilter } from "@/utils/sampleData";
+import { browseProducts } from "@/utils/sampleData";
 import { filterProducts } from "@/utils/filterProducts";
+import { fetchAllFragranceFamilies } from "@/utils/fragranceFamilies";
+import { fragrance_family } from "@/types/family_fragrance";
+import * as LucideIcons from "lucide-react";
 
 export function Browse() {
   //!! Filter states
+  const [families, setFamilies] = useState<fragrance_family[]>([]);
   const [selectedFamily, setSelectedFamily] = useState("all");
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [selectedSize, setSelectedSize] = useState("all");
@@ -16,6 +20,24 @@ export function Browse() {
   const [currentPage, setCurrentPage] = useState(1);
   
   const PRODUCTS_PER_PAGE = 9; // 3 rows × 3 columns
+
+  useEffect(() => {
+    const loadFamilies = async () => {
+      try {
+        const fetchedFamilies = await fetchAllFragranceFamilies();
+        setFamilies(fetchedFamilies);
+      } catch (error) {
+        console.error("Failed to load fragrance families:", error);
+      }
+    };
+    void loadFamilies();
+  }, []);
+
+  const getIconComponent = (iconName?: string) => {
+    if (!iconName) return Flower2;
+    const IconComponent = (LucideIcons as any)[iconName];
+    return IconComponent || Flower2;
+  };
 
   //!! Filter products based on selected filters
   const filteredProducts = filterProducts(browseProducts, {
@@ -93,26 +115,43 @@ export function Browse() {
                     Fragrance Family
                   </h3>
                   <div className="flex flex-col gap-3">
-                    {fragranceFamiliesFilter.map((family) => {
-                      const Icon = family.icon;
+                    {/* All Fragrances option */}
+                    <label
+                      className="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 hover:bg-gray-50"
+                    >
+                      <input
+                        type="radio"
+                        name="fragrance-family"
+                        value="all"
+                        checked={selectedFamily === "all"}
+                        onChange={(e) => handleFilterChange(setSelectedFamily, e.target.value)}
+                        className="h-4 w-4 cursor-pointer border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]/50"
+                      />
+                      <span className="text-sm font-medium text-gray-700 transition-colors duration-200 group-hover:text-gray-900">
+                        All Fragrances
+                      </span>
+                    </label>
+                    
+                    {/* Dynamic fragrance families */}
+                    {families.map((family) => {
+                      const Icon = getIconComponent(family.icon);
+                      const familyValue = family.name.toLowerCase();
                       return (
                         <label
-                          key={family.value}
+                          key={family.name}
                           className="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 hover:bg-gray-50"
                         >
                           <input
                             type="radio"
                             name="fragrance-family"
-                            value={family.value}
-                            checked={selectedFamily === family.value}
+                            value={familyValue}
+                            checked={selectedFamily === familyValue}
                             onChange={(e) => handleFilterChange(setSelectedFamily, e.target.value)}
                             className="h-4 w-4 cursor-pointer border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]/50"
                           />
-                          {Icon && (
-                            <Icon className="h-4 w-4 text-gray-600 transition-colors duration-200 group-hover:text-[#D4AF37]" />
-                          )}
+                          <Icon className="h-4 w-4 text-gray-600 transition-colors duration-200 group-hover:text-[#D4AF37]" />
                           <span className="text-sm font-medium text-gray-700 transition-colors duration-200 group-hover:text-gray-900">
-                            {family.label}
+                            {family.name}
                           </span>
                         </label>
                       );
