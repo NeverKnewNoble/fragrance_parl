@@ -9,7 +9,8 @@ export function Hero() {
       {/* Background image with parallax effect */}
       <div className="absolute inset-0">
         <Image
-          src="/images/hero.jpg"
+          // src="/images/hero.jpg"
+          src="/images/pink.jpg"
           alt="Luxury perfume bottles on a dark background"
           fill
           priority
