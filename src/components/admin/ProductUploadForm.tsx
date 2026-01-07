@@ -29,7 +29,6 @@ const generateSlug = (name: string): string => {
 const ProductUploadForm = ({ onProductCreated }: Props) => {
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
-  const [basePrice, setBasePrice] = useState<number>(100);
   const [fragranceFamilyId, setFragranceFamilyId] = useState<number | null>(
     null
   );
@@ -99,7 +98,7 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
   const addVariant = () => {
     setVariants([
       ...variants,
-      { size_ml: 50, price: basePrice, stock_quantity: 10 },
+      { size_ml: 50, price: 100, stock_quantity: 10 },
     ]);
   };
 
@@ -185,7 +184,7 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
           {
             name: productName.trim(),
             description: description.trim(),
-            price: basePrice,
+            // price: basePrice,
             fragrance_family_id: fragranceFamilyId,
             slug: slug,
             is_active: isActive,
@@ -279,7 +278,6 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
       // Reset form
       setProductName("");
       setDescription("");
-      setBasePrice(100);
       setImages([]);
       setPrimaryImageIndex(0);
       setVariants([
@@ -372,42 +370,22 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
               </select>
             </div>
 
-            <div>
-              <label
-                htmlFor="basePrice"
-                className="block text-sm font-semibold text-black mb-2"
-              >
-                Base Price (₵) *
-              </label>
-              <input
-                type="number"
-                id="basePrice"
-                value={basePrice}
-                onChange={(e) => setBasePrice(Number(e.target.value))}
-                required
-                min="0"
-                step="0.01"
-                placeholder="100"
-                className="block w-full  px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37] text-sm text-black transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center">
-              <input
-                id="isActive"
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="h-5 w-5 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 rounded"
-              />
-              <label
-                htmlFor="isActive"
-                className="ml-3 block text-sm font-medium text-gray-900"
-              >
-                Make this product active and visible to customers
-              </label>
+            <div className="rounded-xl border mt-5 border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-center">
+                <input
+                  id="isActive"
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="h-5 w-5 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="isActive"
+                  className="ml-3 block text-sm font-medium text-gray-900"
+                >
+                  Make this product active and visible to customers
+                </label>
+              </div>
             </div>
           </div>
         </div>

@@ -7,7 +7,6 @@ import { Footer } from "@/components/home/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import ProductUploadForm from "@/components/admin/ProductUploadForm";
 import ProductList from "@/components/admin/ProductList";
-import { OrderStatus } from "@/types/order";
 import { Package, Clock, Truck, CheckCircle, TrendingUp, ShoppingBag, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { fetchAllOrders, updateOrderStatus, OrderWithItems } from "@/utils/orders";
 import { toast } from "@/components/ui/alert";

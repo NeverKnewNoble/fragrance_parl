@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Mail, Phone, MapPin, Edit2, Save, X, Camera } from 'lucide-react';
+import { User, Mail, Edit2, Save, X, Camera } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 export default function MyProfilePage() {
@@ -17,8 +17,6 @@ export default function MyProfilePage() {
   //!! Profile form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   //!! Load user profile data
@@ -26,8 +24,6 @@ export default function MyProfilePage() {
     if (user && !loading) {
       setName(user.user_metadata?.name || user.email?.split('@')[0] || '');
       setEmail(user.email || '');
-      setPhone(user.user_metadata?.phone || '');
-      setAddress(user.user_metadata?.address || '');
       setAvatarUrl(user.user_metadata?.avatar_url || null);
     }
   }, [user, loading]);
@@ -48,8 +44,6 @@ export default function MyProfilePage() {
       const { error } = await supabase.auth.updateUser({
         data: {
           name,
-          phone,
-          address,
         },
       });
 
@@ -69,8 +63,6 @@ export default function MyProfilePage() {
   const handleCancel = () => {
     if (user) {
       setName(user.user_metadata?.name || user.email?.split('@')[0] || '');
-      setPhone(user.user_metadata?.phone || '');
-      setAddress(user.user_metadata?.address || '');
     }
     setIsEditing(false);
   };
@@ -119,13 +111,13 @@ export default function MyProfilePage() {
           </div>
 
           {/* Profile Card */}
-          <div className="rounded-[32px] border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden">
+          <div className="rounded-4xl border border-gray-200 bg-linear-to-br from-gray-50 to-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden">
             {/* Profile Header with Avatar */}
-            <div className="relative bg-gradient-to-br from-[#D4AF37]/10 via-[#D4AF37]/5 to-transparent px-6 sm:px-8 py-8 sm:py-10">
+            <div className="relative bg-linear-to-br from-[#D4AF37]/10 via-[#D4AF37]/5 to-transparent px-6 sm:px-8 py-8 sm:py-10">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 {/* Avatar */}
                 <div className="relative group">
-                  <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#f5e3a1] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+                  <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-linear-to-br from-[#D4AF37] to-[#f5e3a1] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
@@ -223,65 +215,11 @@ export default function MyProfilePage() {
                   </div>
                 </div>
               </div>
-
-              {/* Phone */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:p-5 transition-all duration-200 hover:border-gray-300 hover:shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#D4AF37]/10 text-[#D4AF37]">
-                    <Phone className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500 mb-1">
-                      Phone Number
-                    </p>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#D4AF37] focus:outline-none"
-                        placeholder="+233 XX XXX XXXX"
-                      />
-                    ) : (
-                      <p className="text-sm sm:text-base font-medium text-gray-900">
-                        {phone || 'Not provided'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:p-5 transition-all duration-200 hover:border-gray-300 hover:shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#D4AF37]/10 text-[#D4AF37]">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500 mb-1">
-                      Delivery Address
-                    </p>
-                    {isEditing ? (
-                      <textarea
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        className="w-full rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#D4AF37] focus:outline-none resize-none"
-                        placeholder="Enter your delivery address"
-                        rows={3}
-                      />
-                    ) : (
-                      <p className="text-sm sm:text-base font-medium text-gray-900">
-                        {address || 'Not provided'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 
           {/* Account Actions */}
-          <div className="mt-8 rounded-[32px] border border-gray-200 bg-white p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+          <div className="mt-8 rounded-4xl border border-gray-200 bg-white p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
             <h3 className="mb-4 text-lg font-bold text-gray-900">Account Actions</h3>
             <div className="flex flex-col sm:flex-row gap-3">
               <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50">

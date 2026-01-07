@@ -2,14 +2,41 @@
 
 import { ProductCard } from '@/components/ui/product-card';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { scrollLeft, scrollRight } from '@/utils/scrollFunctions';
 import { handleAddToCart } from '@/utils/addToCart';
-import { newArrivalsProducts } from '@/utils/sampleData';
+import { getAllProductsAndLinkages } from '@/utils/products';
 
 export function NewArrivals() {
   //!! Scroll container reference
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNewArrivals = async () => {
+      try {
+        const allProducts = await getAllProductsAndLinkages();
+        // Get the latest 6 products for new arrivals
+        const newArrivals = allProducts.slice(0, 6).map(product => ({
+          title: product.name,
+          product_variants: product.product_variants,
+          price: product.price,
+          image: product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url,
+          id: product.id,
+          slug: product.slug,
+          description: product.description
+        }));
+        setProducts(newArrivals);
+      } catch (error) {
+        console.error('Error fetching new arrivals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewArrivals();
+  }, []);
 
 
 
@@ -81,26 +108,32 @@ export function NewArrivals() {
 
             {/* Products Scroll Container - Shows only 3 cards */}
             <div className="overflow-hidden max-w-full sm:max-w-222 lg:max-w-237 px-4 sm:px-0">
-              <div
-                ref={scrollContainerRef}
-                className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
-              >
-                {newArrivalsProducts.map((product, index) => (
-                  <div
-                    key={`${product.title}-${index}`}
-                    className="shrink-0"
-                  >
-                    <ProductCard
-                      title={product.title}
-                      size_ml={product.size_ml}
-                      price={product.price}
-                      image={product.image}
-                      onAddToCart={() => handleAddToCart({ product })}
-                      className="w-70 sm:w-75"
-                    />
-                  </div>
-                ))}
-              </div>
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+                </div>
+              ) : (
+                <div
+                  ref={scrollContainerRef}
+                  className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+                >
+                  {products.map((product, index) => (
+                    <div
+                      key={`${product.id}-${index}`}
+                      className="shrink-0"
+                    >
+                      <ProductCard
+                        title={product.title}
+                        product_variants={product.product_variants}
+                        price={product.price}
+                        image={product.image}
+                        onAddToCart={() => handleAddToCart({ product })}
+                        className="w-70 sm:w-75"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
