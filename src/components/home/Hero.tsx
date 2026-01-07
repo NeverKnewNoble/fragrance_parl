@@ -13,6 +13,7 @@ export function Hero() {
           src="/images/pink.jpg"
           alt="Luxury perfume bottles on a dark background"
           fill
+          sizes="100vw"
           priority
           className="object-cover object-center scale-105 transition-transform duration-700 ease-out"
         />
@@ -76,42 +77,6 @@ export function Hero() {
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <div className="h-8 w-px bg-linear-to-b from-[#D4AF37] to-transparent opacity-60" />
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.8s ease-out 0.2s both;
-        }
-
-        .animate-fade-in-delay {
-          animation: fade-in 0.8s ease-out 0.4s both;
-        }
-      `}</style>
     </section>
   );
 }

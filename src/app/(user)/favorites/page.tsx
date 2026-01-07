@@ -8,7 +8,7 @@ import { ProductCard } from '@/components/ui/product-card';
 import { useAuth } from '@/hooks/useAuth';
 import { Heart, Trash2 } from 'lucide-react';
 import { handleAddToCart } from '@/utils/addToCart';
-import { browseProducts } from '@/utils/sampleData';
+
 
 export default function FavoritesPage() {
   const router = useRouter();
@@ -44,9 +44,7 @@ export default function FavoritesPage() {
   };
 
   //!! Get favorite products
-  const favoriteProducts = browseProducts.filter((product) =>
-    favorites.includes(product.title)
-  );
+  const favoriteProducts: any[] = []; // Empty for now until favorites are properly implemented
 
   //!! Show loading state
   if (loading || isLoadingFavorites) {
@@ -100,7 +98,7 @@ export default function FavoritesPage() {
                 <div key={`${product.title}-${index}`} className="relative group">
                   <ProductCard
                     title={product.title}
-                    size_ml={product.size_ml}
+                    // size_ml={product.size_ml}
                     price={product.price}
                     image={product.image}
                     onAddToCart={() => handleAddToCart({ product })}

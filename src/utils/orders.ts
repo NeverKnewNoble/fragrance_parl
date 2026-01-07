@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { OrderWithItems } from "@/types/order";
 
+export type { OrderWithItems };
+
 
 export async function fetchAllOrders(): Promise<OrderWithItems[]> {
   const { data, error } = await supabase

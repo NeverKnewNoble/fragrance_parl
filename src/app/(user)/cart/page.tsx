@@ -5,30 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import { ShoppingCart, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
-import { CartItem } from '@/types/cart';
-import {
-  loadCart,
-  removeFromCart,
-  updateCartItemQuantity,
-  calculateCartTotals,
-} from '@/utils/cartStorage';
+import { Cart } from '@/types/cart';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function CartPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { cart, isLoading, removeItem, updateItem, getCartCount, getCartTotals } = useCart();
   const [isUpdating, setIsUpdating] = useState(false);
-
-  //!! Load cart items
-  useEffect(() => {
-    if (user && !loading) {
-      const cart = loadCart(user.id);
-      setCartItems(cart);
-    }
-  }, [user, loading]);
 
   //!! Redirect if not authenticated
   useEffect(() => {
@@ -38,25 +25,51 @@ export default function CartPage() {
   }, [user, loading, router]);
 
   //!! Handle remove item
-  const handleRemoveItem = (productTitle: string, size_ml: number) => {
+  const handleRemoveItem = async (itemId: string) => {
     if (!user || isUpdating) return;
     setIsUpdating(true);
-    const updatedCart = removeFromCart(user.id, productTitle, size_ml);
-    setCartItems(updatedCart);
-    setIsUpdating(false);
+    try {
+      await removeItem(itemId);
+    } catch (error) {
+      console.error('Error removing item:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   //!! Handle quantity change
-  const handleQuantityChange = (productTitle: string, size_ml: number, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (!user || isUpdating || newQuantity < 1) return;
     setIsUpdating(true);
-    const updatedCart = updateCartItemQuantity(user.id, productTitle, size_ml, newQuantity);
-    setCartItems(updatedCart);
-    setIsUpdating(false);
+    try {
+      await updateItem({ id: itemId, quantity: newQuantity });
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  //!! Calculate totals
-  const { subtotal, shipping, total } = calculateCartTotals(cartItems);
+  //!! Get price from product variants
+  const getItemPrice = (item: any) => {
+    // Find the variant that matches the cart item size
+    const variant = item.products?.product_variants?.find((v: any) => v.size_ml === item.size_ml);
+    return variant?.price || 0;
+  };
+
+  //!! Get product image
+  const getProductImage = (item: any) => {
+    const primaryImage = item.products?.product_images?.find((img: any) => img.is_primary);
+    return primaryImage?.image_url || item.products?.product_images?.[0]?.image_url || '/placeholder.jpg';
+  };
+
+  //!! Get product name
+  const getProductName = (item: any) => {
+    return item.products?.name || 'Unknown Product';
+  };
+
+  const cartTotals = getCartTotals();
+  const cartItems = cart?.cart_items || [];
 
   //!! Handle checkout
   const handleCheckout = () => {
@@ -112,19 +125,19 @@ export default function CartPage() {
               <div className="lg:col-span-2 space-y-4">
                 {cartItems.map((item, index) => (
                   <div
-                    key={`${item.product.title}-${item.size_ml}-${index}`}
+                    key={`${item.id}-${item.size_ml}-${index}`}
                     className="rounded-4xl border border-gray-200 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
                       {/* Product Image */}
                       <Link
-                        href={`/product/${item.product.id || item.product.title.toLowerCase().replace(/\s+/g, '-')}`}
+                        href={`/product/${item.product_id}`}
                         className="relative h-32 w-32 sm:h-40 sm:w-40 rounded-lg overflow-hidden bg-gray-200 shrink-0 group"
                       >
-                        {item.product.image ? (
+                        {getProductImage(item) !== '/placeholder.jpg' ? (
                           <Image
-                            src={item.product.image}
-                            alt={item.product.title}
+                            src={getProductImage(item)}
+                            alt={getProductName(item)}
                             fill
                             className="object-cover transition-transform duration-300 group-hover:scale-110"
                           />
@@ -138,11 +151,11 @@ export default function CartPage() {
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
                         <Link
-                          href={`/product/${item.product.id || item.product.title.toLowerCase().replace(/\s+/g, '-')}`}
+                          href={`/product/${item.product_id}`}
                           className="block mb-2"
                         >
                           <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 hover:text-[#D4AF37] transition-colors duration-200">
-                            {item.product.title}
+                            {getProductName(item)}
                           </h3>
                         </Link>
                         <p className="text-sm text-gray-600 mb-4">{item.size_ml}ml</p>
@@ -151,7 +164,7 @@ export default function CartPage() {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2 rounded-lg border-2 border-gray-200">
                             <button
-                              onClick={() => handleQuantityChange(item.product.title, item.size_ml, item.quantity - 1)}
+                              onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                               disabled={isUpdating || item.quantity <= 1}
                               className="flex h-10 w-10 items-center justify-center text-gray-700 transition-colors duration-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Decrease quantity"
@@ -162,7 +175,7 @@ export default function CartPage() {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => handleQuantityChange(item.product.title, item.size_ml, item.quantity + 1)}
+                              onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                               disabled={isUpdating}
                               className="flex h-10 w-10 items-center justify-center text-gray-700 transition-colors duration-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Increase quantity"
@@ -173,10 +186,10 @@ export default function CartPage() {
 
                           {/* Remove Button */}
                           <button
-                            onClick={() => handleRemoveItem(item.product.title, item.size_ml)}
+                            onClick={() => handleRemoveItem(item.id)}
                             disabled={isUpdating}
                             className="flex items-center gap-2 rounded-lg border-2 border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-100 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label={`Remove ${item.product.title} from cart`}
+                            aria-label={`Remove ${getProductName(item)} from cart`}
                           >
                             <Trash2 className="h-4 w-4" />
                             Remove
@@ -187,10 +200,10 @@ export default function CartPage() {
                       {/* Price */}
                       <div className="flex flex-col items-end justify-between sm:justify-start">
                         <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-                          ₵{(item.product.price * item.quantity).toLocaleString('en-US')}
+                          ₵{(getItemPrice(item) * item.quantity).toLocaleString('en-US')}
                         </p>
                         <p className="text-sm text-gray-500">
-                          ₵{item.product.price.toLocaleString('en-US')} each
+                          ₵{getItemPrice(item).toLocaleString('en-US')} each
                         </p>
                       </div>
                     </div>
@@ -207,16 +220,16 @@ export default function CartPage() {
                   <div className="space-y-4 mb-6">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items):</span>
-                      <span className="font-semibold">₵{subtotal.toLocaleString('en-US')}</span>
+                      <span className="font-semibold">₵{cartTotals.subtotal.toLocaleString('en-US')}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span>Shipping:</span>
-                      <span className="font-semibold">₵{shipping.toLocaleString('en-US')}</span>
+                      <span className="font-semibold">₵{cartTotals.deliveryFee.toLocaleString('en-US')}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex items-center justify-between text-lg font-bold text-gray-900">
                         <span>Total:</span>
-                        <span>₵{total.toLocaleString('en-US')}</span>
+                        <span>₵{cartTotals.total.toLocaleString('en-US')}</span>
                       </div>
                     </div>
                   </div>

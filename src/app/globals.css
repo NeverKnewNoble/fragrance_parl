@@ -51,3 +51,82 @@ html {
   background: #D4AF37;
   opacity: 0.8;
 }
+
+/* Price range slider styles */
+.price-range-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #d4af37;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+  transition: all 0.2s ease-out;
+}
+
+.price-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.6);
+}
+
+.price-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #d4af37;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+  transition: all 0.2s ease-out;
+}
+
+.price-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.6);
+}
+
+.price-range-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+}
+
+.price-range-slider::-moz-range-track {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+}
+
+/* Hero component animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s ease-out 0.2s both;
+}
+
+.animate-fade-in-delay {
+  animation: fade-in 0.8s ease-out 0.4s both;
+}

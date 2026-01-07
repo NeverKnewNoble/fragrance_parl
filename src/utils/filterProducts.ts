@@ -1,4 +1,4 @@
-import { SimpleProduct } from './sampleData';
+import { SimpleProduct } from '@/types/simpleProduct';
 import { FilterConfig } from '@/types/filter';
 
 //!! Generic product filter function

@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/ui/product-card";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Flower2 } from "lucide-react";
 import { handleAddToCart } from "@/utils/addToCart";
-import { browseProducts } from "@/utils/sampleData";
+import { getAllProductsAndLinkages } from "@/utils/products";
 import { filterProducts } from "@/utils/filterProducts";
 import { fetchAllFragranceFamilies } from "@/utils/fragranceFamilies";
 import { fragrance_family } from "@/types/family_fragrance";
@@ -15,22 +15,44 @@ export function Browse() {
   const [families, setFamilies] = useState<fragrance_family[]>([]);
   const [selectedFamily, setSelectedFamily] = useState("all");
   const [priceRange, setPriceRange] = useState([0, 1000]);
-  const [selectedSize, setSelectedSize] = useState("all");
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const PRODUCTS_PER_PAGE = 9; // 3 rows × 3 columns
 
   useEffect(() => {
-    const loadFamilies = async () => {
+    const loadData = async () => {
       try {
-        const fetchedFamilies = await fetchAllFragranceFamilies();
+        const [fetchedFamilies, fetchedProducts] = await Promise.all([
+          fetchAllFragranceFamilies(),
+          getAllProductsAndLinkages()
+        ]);
+        
         setFamilies(fetchedFamilies);
+        
+        // Transform products to match expected structure
+        const transformedProducts = fetchedProducts.map(product => ({
+          title: product.name,
+          product_variants: product.product_variants,
+          price: product.price,
+          image: product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url,
+          family: product.fragrance_families?.[0]?.name?.toLowerCase() || 'unknown',
+          id: product.id,
+          slug: product.slug,
+          description: product.description
+        }));
+        
+        setProducts(transformedProducts);
       } catch (error) {
-        console.error("Failed to load fragrance families:", error);
+        console.error("Failed to load data:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    void loadFamilies();
+    
+    loadData();
   }, []);
 
   const getIconComponent = (iconName?: string) => {
@@ -40,27 +62,22 @@ export function Browse() {
   };
 
   //!! Filter products based on selected filters
-  const filteredProducts = filterProducts(browseProducts, {
-    exactMatch: {
-      value: selectedFamily,
-      field: "family",
-      allValue: "all",
-    },
-    range: {
-      min: priceRange[0],
-      max: priceRange[1],
-      field: "price",
-    },
-    valueMatch: {
-      value: selectedSize,
-      field: "size_ml",
-      allValue: "all",
-      valueMap: {
-        "50": 50,
-        "75": 75,
-        "100": 100,
-      },
-    },
+  const filteredProducts = products.filter((product) => {
+    // Family filter
+    if (selectedFamily !== 'all') {
+      const productFamily = product.family?.toLowerCase() || 'unknown';
+      if (productFamily !== selectedFamily) {
+        return false;
+      }
+    }
+
+    // Price range filter
+    const productPrice = product.price || 0;
+    if (productPrice < priceRange[0] || productPrice > priceRange[1]) {
+      return false;
+    }
+
+    return true;
   });
 
   //!! Pagination calculations
@@ -182,33 +199,6 @@ export function Browse() {
                     </div>
                   </div>
                 </div>
-
-                {/* Bottle Size Filter */}
-                <div>
-                  <h3 className="mb-4 text-sm font-bold uppercase tracking-[0.15em] text-gray-900">
-                    Bottle Size
-                  </h3>
-                  <div className="flex flex-col gap-3">
-                    {["all", "50", "75", "100"].map((size) => (
-                      <label
-                        key={size}
-                        className="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 hover:bg-gray-50"
-                      >
-                        <input
-                          type="radio"
-                          name="bottle-size"
-                          value={size}
-                          checked={selectedSize === size}
-                          onChange={(e) => handleFilterChange(setSelectedSize, e.target.value)}
-                          className="h-4 w-4 cursor-pointer border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]/50"
-                        />
-                        <span className="text-sm font-medium text-gray-700 transition-colors duration-200 group-hover:text-gray-900">
-                          {size === "all" ? "All Sizes" : `${size}ml`}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </aside>
@@ -224,14 +214,18 @@ export function Browse() {
             </h2>
 
             {/* Products Grid */}
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <>
               <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {currentProducts.map((product, index) => (
                   <ProductCard
                     key={`${product.title}-${index}`}
                     title={product.title}
-                    size_ml={product.size_ml}
+                    product_variants={product.product_variants}
                     price={product.price}
                     image={product.image}
                     onAddToCart={() => handleAddToCart({ product })}
@@ -311,7 +305,6 @@ export function Browse() {
                   onClick={() => {
                     setSelectedFamily("all");
                     setPriceRange([0, 1000]);
-                    setSelectedSize("all");
                     setCurrentPage(1);
                   }}
                   className="mt-4 text-sm font-semibold text-[#D4AF37] transition-colors duration-200 hover:text-[#D4AF37]/80"
@@ -323,52 +316,6 @@ export function Browse() {
           </div>
         </div>
       </div>
-
-      {/* Custom styles for range slider */}
-      <style jsx>{`
-        .price-range-slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #d4af37;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
-          transition: all 0.2s ease-out;
-        }
-
-        .price-range-slider::-webkit-slider-thumb:hover {
-          transform: scale(1.15);
-          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.6);
-        }
-
-        .price-range-slider::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #d4af37;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
-          transition: all 0.2s ease-out;
-        }
-
-        .price-range-slider::-moz-range-thumb:hover {
-          transform: scale(1.15);
-          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.6);
-        }
-
-        .price-range-slider::-webkit-slider-runnable-track {
-          height: 6px;
-          border-radius: 9999px;
-        }
-
-        .price-range-slider::-moz-range-track {
-          height: 6px;
-          background: #e5e7eb;
-          border-radius: 9999px;
-        }
-      `}</style>
     </section>
   );
 }

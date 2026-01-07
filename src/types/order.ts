@@ -1,4 +1,4 @@
-import { SimpleProduct } from '@/utils/sampleData';
+import { SimpleProduct } from '@/types/simpleProduct';
 import { LucideIcon } from 'lucide-react';
 
 //!! Order status type

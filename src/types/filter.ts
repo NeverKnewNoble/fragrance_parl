@@ -1,4 +1,4 @@
-import { SimpleProduct } from '@/utils/sampleData';
+import { SimpleProduct } from '@/types/simpleProduct';
 
 //!! Filter configuration types
 export interface FilterConfig {

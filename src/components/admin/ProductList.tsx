@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Product } from "@/types/product";
+import { getAllProductsAndLinkages, deleteProduct, isActiveSwitch } from "@/utils/products";
 import { supabase } from "@/lib/supabase/client";
 import { Trash2, Image as ImageIcon } from "lucide-react";
 
@@ -15,23 +16,9 @@ const ProductList = () => {
       setLoading(true);
       setError(null);
 
-      const { data: productsData, error: productsError } = await supabase
-        .from("products")
-        .select(`
-          id,
-          name,
-          description,
-          slug,
-          is_active,
-          fragrance_families(name),
-          product_images(image_url, is_primary),
-          product_variants(size_ml)
-        `)
-        .order('created_at', { ascending: false });
+      const productsData = await getAllProductsAndLinkages();
 
-      if (productsError) throw productsError;
-
-      const formattedProducts: Product[] = (productsData || []).map((p: any) => {
+      const formattedProducts: Product[] = productsData.map((p: any) => {
         const primaryImage = p.product_images?.find((img: any) => img.is_primary);
         const images = p.product_images?.map((img: any) => img.image_url) || [];
         const sizes = p.product_variants?.map((v: any) => v.size_ml).sort((a: number, b: number) => a - b) || [];
@@ -62,21 +49,9 @@ const ProductList = () => {
   }, []);
 
   const handleToggleActive = async (productId: string, next: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: next })
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      setProducts(prev => 
-        prev.map(p => p.id === productId ? { ...p, isActive: next } : p)
-      );
-    } catch (err: any) {
-      console.error('Error updating product:', err);
-      alert('Failed to update product status');
-    }
+    await isActiveSwitch(productId, next);
+    // Refresh the products list to reflect the change
+    fetchProducts();
   };
 
   const handleDelete = async (productId: string) => {
@@ -84,19 +59,9 @@ const ProductList = () => {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      setProducts(prev => prev.filter(p => p.id !== productId));
-    } catch (err: any) {
-      console.error('Error deleting product:', err);
-      alert('Failed to delete product');
-    }
+    await deleteProduct(productId);
+    // Refresh the products list to reflect the change
+    fetchProducts();
   };
 
   if (loading) {

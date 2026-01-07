@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Navbar } from '@/components/home/Navbar';
@@ -9,19 +9,93 @@ import { ProductCard } from '@/components/ui/product-card';
 import { ShoppingCart, Heart, Share2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { handleAddToCart } from '@/utils/addToCart';
-import { detailedProducts, relatedProducts } from '@/utils/sampleData';
+import { getAllProductsAndLinkages } from '@/utils/products';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
-  const product = detailedProducts[productId];
-  const [selectedSize, setSelectedSize] = useState(product?.sizes[0] || { ml: 75, price: 120 });
+  const [product, setProduct] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSize, setSelectedSize] = useState({ ml: 75, price: 120 });
   const [isFavorite, setIsFavorite] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const allProducts = await getAllProductsAndLinkages();
+        // console.log('URL Product ID:', productId);
+        // console.log('Available Product IDs:', allProducts.map(p => ({ id: p.id, name: p.name })));
+        
+        const foundProduct = allProducts.find(p => 
+          p.id === productId || 
+          p.id?.toString() === productId || 
+          p.slug === productId
+        );
+        // console.log('Found Product:', foundProduct);
+        
+        if (foundProduct) {
+          // Transform product to match expected structure
+          const transformedProduct = {
+            id: foundProduct.id,
+            title: foundProduct.name,
+            description: foundProduct.description,
+            price: foundProduct.price,
+            image: foundProduct.product_images?.find((img: any) => img.is_primary)?.image_url || foundProduct.product_images?.[0]?.image_url,
+            family: foundProduct.fragrance_families?.[0]?.name || 'Unknown',
+            sizes: foundProduct.product_variants?.map((variant: any) => ({
+              ml: variant.size_ml,
+              price: variant.price
+          })) || [{ ml: 50, price: foundProduct.price }],
+            notes: {
+              top: foundProduct.product_notes?.filter((note: any) => note.note_type === 'top').map((note: any) => note.note_name) || [],
+              middle: foundProduct.product_notes?.filter((note: any) => note.note_type === 'middle').map((note: any) => note.note_name) || [],
+              base: foundProduct.product_notes?.filter((note: any) => note.note_type === 'base').map((note: any) => note.note_name) || []
+            }
+          };
+          
+          setProduct(transformedProduct);
+          setSelectedSize(transformedProduct.sizes[0]);
+          
+          // Get related products (same fragrance family, excluding current product)
+          const related = allProducts
+            .filter(p => p.id !== productId && p.fragrance_families?.[0]?.name === foundProduct.fragrance_families?.[0]?.name)
+            .slice(0, 3)
+            .map(p => ({
+              title: p.name,
+              product_variants: p.product_variants,
+              price: p.price,
+              image: p.product_images?.find((img: any) => img.is_primary)?.image_url || p.product_images?.[0]?.image_url
+            }));
+          
+          setRelatedProducts(related);
+        }
+      } catch (error) {
+        console.error('Error loading product:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [productId]);
+
 
   //!! Validation checks for the product detail page
+  if (loading) {
+    return (
+      <div className="relative min-h-screen bg-white">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#D4AF37] border-r-transparent"></div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="relative min-h-screen bg-white">
@@ -85,7 +159,7 @@ export default function ProductDetailPage() {
           {/* Back Button */}
           <button
             onClick={() => router.back()}
-            className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#D4AF37] transition-colors duration-200"
+            className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#D4AF37] transition-colors duration-200 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -100,6 +174,7 @@ export default function ProductDetailPage() {
                   src={product.image}
                   alt={product.title}
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                   priority
                 />
@@ -149,7 +224,7 @@ export default function ProductDetailPage() {
                         Top Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {product.notes.top.map((note) => (
+                        {product.notes.top.map((note: string) => (
                           <span
                             key={note}
                             className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200"
@@ -166,7 +241,7 @@ export default function ProductDetailPage() {
                         Heart Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {product.notes.middle.map((note) => (
+                        {product.notes.middle.map((note: string) => (
                           <span
                             key={note}
                             className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200"
@@ -183,7 +258,7 @@ export default function ProductDetailPage() {
                         Base Notes
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {product.notes.base.map((note) => (
+                        {product.notes.base.map((note: string) => (
                           <span
                             key={note}
                             className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200"
@@ -203,11 +278,11 @@ export default function ProductDetailPage() {
                   Select Size
                 </h3>
                 <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
+                  {product.sizes.map((size: any) => (
                     <button
                       key={size.ml}
                       onClick={() => setSelectedSize(size)}
-                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer ${
                         selectedSize.ml === size.ml
                           ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
                           : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
@@ -227,7 +302,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 cursor-pointer"
                   >
                     −
                   </button>
@@ -236,7 +311,7 @@ export default function ProductDetailPage() {
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 cursor-pointer"
                   >
                     +
                   </button>
@@ -247,14 +322,14 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={handleAddToCartClick}
-                  className="group/button relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-linear-to-r from-[#D4AF37] via-[#f3de9e] to-[#D4AF37] px-6 py-4 text-sm font-semibold text-black shadow-[0_22px_60px_rgba(212,175,55,0.45)] transition-transform duration-200 hover:-translate-y-px active:translate-y-0"
+                  className="group/button relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-linear-to-r from-[#D4AF37] via-[#f3de9e] to-[#D4AF37] px-6 py-4 text-sm font-semibold text-black shadow-[0_22px_60px_rgba(212,175,55,0.45)] transition-transform duration-200 hover:-translate-y-px active:translate-y-0 cursor-pointer"
                 >
                   <ShoppingCart className="h-5 w-5 transition-transform duration-200 group-hover/button:scale-110" />
                   Add to Cart
                 </button>
                 <button
                   onClick={() => setIsFavorite(!isFavorite)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl border-2 transition-all duration-200 ${
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
                     isFavorite
                       ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
@@ -265,7 +340,7 @@ export default function ProductDetailPage() {
                 </button>
                 <button
                   onClick={handleShare}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-gray-200 bg-white text-gray-700 transition-all duration-200 hover:border-gray-300"
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-gray-200 bg-white text-gray-700 transition-all duration-200 hover:border-gray-300 cursor-pointer"
                   aria-label="Share product"
                 >
                   <Share2 className="h-5 w-5" />
@@ -285,7 +360,7 @@ export default function ProductDetailPage() {
                   <ProductCard
                     key={`${relatedProduct.title}-${index}`}
                     title={relatedProduct.title}
-                    size_ml={relatedProduct.size_ml}
+                    product_variants={relatedProduct.product_variants}
                     price={relatedProduct.price}
                     image={relatedProduct.image}
                     onAddToCart={() => handleAddToCart({ product: relatedProduct })}

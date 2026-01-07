@@ -14,8 +14,8 @@ function cnUtil(...classes: (string | undefined | null | false)[]): string {
  
 export interface ProductCardProps {
   title: string;
-  size_ml: number;
-  price: number;
+  price?: number;
+  product_variants?: Array<{ size_ml: number; price: number }>;
   image?: string;
   imageAlt?: string;
   onAddToCart?: () => void;
@@ -25,8 +25,8 @@ export interface ProductCardProps {
  
 export function ProductCard({
   title,
-  size_ml,
   price,
+  product_variants,
   image,
   imageAlt,
   onAddToCart,
@@ -44,8 +44,11 @@ export function ProductCard({
     setIsInFavorites(isFavorite(userId, title));
   }, [user, title]);
 
+  // Get initial price from product_variants or fallback to price prop
+  const initialPrice = product_variants?.[0]?.price || price || 0;
+  
   // Format price as Ghanaian Cedi (only currency)
-  const formattedPrice = `₵${price.toLocaleString('en-US')}`;
+  const formattedPrice = `₵${initialPrice.toLocaleString('en-US')}`;
 
   // Handle add to cart click
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -107,6 +110,7 @@ export function ProductCard({
                 src={image}
                 alt={imageAlt || title}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className={cnUtil(
                   'object-cover transition-transform duration-700 ease-out',
                   isHovered && 'scale-110'
@@ -132,15 +136,10 @@ export function ProductCard({
         <div className="relative mt-auto flex flex-col px-4 sm:px-6 py-4 sm:py-5 z-10">
           {/* Title - Clickable link */}
           <Link href={`/product/${id}`}>
-            <h3 className="mb-2 text-xl sm:text-2xl font-bold text-white leading-tight line-clamp-1 hover:text-[#D4AF37] transition-colors duration-200 cursor-pointer">
+            <h3 className="mb-4 text-xl sm:text-2xl font-bold text-white leading-tight line-clamp-1 hover:text-[#D4AF37] transition-colors duration-200 cursor-pointer">
               {title}
             </h3>
           </Link>
-
-          {/* Size */}
-          <p className="mb-4 text-sm text-gray-200 leading-relaxed">
-            {size_ml}ml
-          </p>
 
           {/* Price and Add to Cart Button */}
           <div className="flex items-center justify-between gap-3 sm:gap-4">
@@ -150,7 +149,7 @@ export function ProductCard({
             <button
               onClick={handleAddToCart}
               className={cnUtil(
-                'rounded-full bg-white px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-900',
+                'rounded-full bg-white px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm cursor-pointer font-semibold text-gray-900',
                 'shadow-[0_4px_16px_rgba(0,0,0,0.12)]',
                 'transition-all duration-300 ease-out',
                 'hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)]',

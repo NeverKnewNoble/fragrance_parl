@@ -13,34 +13,65 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { scrollLeft, scrollRight } from "@/utils/scrollFunctions";
 import { handleAddToCart } from "@/utils/addToCart";
-import { productsByFamily } from "@/utils/sampleData";
+import { getAllProductsAndLinkages } from "@/utils/products";
 import { fetchAllFragranceFamilies } from "@/utils/fragranceFamilies";
 import { fragrance_family } from "@/types/family_fragrance";
 import * as LucideIcons from "lucide-react";
 
 export default function CategoryPage() {
   const [families, setFamilies] = useState<fragrance_family[]>([]);
-  const [selectedFamily, setSelectedFamily] = useState("floral");
+  const [selectedFamily, setSelectedFamily] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const currentProducts = productsByFamily[selectedFamily] || [];
+  const currentProducts = selectedFamily 
+  ? products.filter((product: any) => product.family === selectedFamily)
+  : products;
   const selectedFamilyData = families.find(
     (f) => f.name.toLowerCase() === selectedFamily
   );
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   useEffect(() => {
-    const loadFamilies = async () => {
+    const loadData = async () => {
       try {
-        const fetchedFamilies = await fetchAllFragranceFamilies();
+        const [fetchedFamilies, fetchedProducts] = await Promise.all([
+          fetchAllFragranceFamilies(),
+          getAllProductsAndLinkages()
+        ]);
+        
+        // console.log('Fetched families:', fetchedFamilies);
+        // console.log('Fetched products:', fetchedProducts);
+        
         setFamilies(fetchedFamilies);
-        if (fetchedFamilies.length > 0 && !selectedFamily) {
-          setSelectedFamily(fetchedFamilies[0].name.toLowerCase());
+        
+        // Transform products to match expected structure
+        const transformedProducts = fetchedProducts.map(product => ({
+          title: product.name,
+          product_variants: product.product_variants,
+          image: product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url,
+          family: (product.fragrance_families as any)?.name?.toLowerCase() || 'unknown',
+          id: product.id,
+          slug: product.slug,
+          description: product.description
+        }));
+        
+        // console.log('Transformed products:', transformedProducts);
+        setProducts(transformedProducts);
+        
+        // Set initial family to the first available family
+        if (fetchedFamilies.length > 0) {
+          const firstFamily = fetchedFamilies[0].name.toLowerCase();
+          setSelectedFamily(firstFamily);
+          // console.log('Set selected family to:', firstFamily);
         }
       } catch (error) {
-        console.error("Failed to load fragrance families:", error);
+        console.error("Failed to load data:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    void loadFamilies();
+    void loadData();
   }, []);
 
   const getIconComponent = (iconName?: string) => {
@@ -167,7 +198,14 @@ export default function CategoryPage() {
               </div>
 
               {/* Products Scroll Container */}
-              {currentProducts.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4AF37]"></div>
+                    <p className="mt-4 text-gray-500">Loading products...</p>
+                  </div>
+                </div>
+              ) : currentProducts.length > 0 ? (
                 <div className="overflow-hidden max-w-full sm:max-w-222 lg:max-w-237 px-4 sm:px-0">
                   <div
                     ref={scrollContainerRef}
@@ -180,8 +218,7 @@ export default function CategoryPage() {
                       >
                         <ProductCard
                           title={product.title}
-                          size_ml={product.size_ml}
-                          price={product.price}
+                          product_variants={product.product_variants}
                           image={product.image}
                           productId={product.id}
                           onAddToCart={() => handleAddToCart({ product })}
@@ -194,8 +231,13 @@ export default function CategoryPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center px-4">
                   <p className="text-lg font-medium text-gray-500">
-                    No products found in this category.
+                    {selectedFamily ? `No products found in ${selectedFamily} category.` : 'No products found.'}
                   </p>
+                  {selectedFamily && (
+                    <p className="mt-2 text-sm text-gray-400">
+                      Try selecting a different category.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
