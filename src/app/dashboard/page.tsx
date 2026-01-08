@@ -19,7 +19,7 @@ export default function Dashboard() {
   const { user, loading } = useAuth();
   const [tab, setTab] = useState<Tab>("add_product");
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function Dashboard() {
     void loadOrders();
   }, [user]);
 
-  const toggleOrderExpansion = (orderId: number) => {
+  const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(orderId)) {
@@ -81,7 +81,7 @@ export default function Dashboard() {
     }
   }, [tab]);
 
-  const handleStatusChange = async (orderId: number, newStatus: string) => {
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
       await updateOrderStatus(orderId, newStatus);
       setOrders((prev) =>
@@ -332,10 +332,6 @@ export default function Dashboard() {
                           <div>
                             <p className="text-xs font-semibold text-gray-500 mb-1">Delivery Fee</p>
                             <p className="text-sm text-gray-900">₵{order.delivery_fee.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 mb-1">Payment Status</p>
-                            <p className="text-sm text-gray-900 capitalize">{order.payment_status}</p>
                           </div>
                         </div>
 

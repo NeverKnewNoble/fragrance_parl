@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Address, CreateAddressInput, UpdateAddressInput } from '@/types/address';
 
 //!! Get user addresses

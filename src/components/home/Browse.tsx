@@ -228,6 +228,7 @@ export function Browse() {
                     product_variants={product.product_variants}
                     price={product.price}
                     image={product.image}
+                    productId={product.id}
                     onAddToCart={() => handleAddToCart({ product })}
                     className="w-full"
                   />

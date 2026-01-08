@@ -1,6 +1,7 @@
 import { Package, Truck, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { OrderStatus, Order } from '@/types/order';
+import { OrderStatus } from '@/types/order';
 import { StatusConfig } from '@/types/order';
+import { OrderWithDetails } from '@/services/orderService';
 
 
 
@@ -62,9 +63,9 @@ export const getStatusConfig = (status: OrderStatus): StatusConfig => {
 //!! Filter orders by status
 //!! Filters an array of orders based on the selected status
 export const filterOrdersByStatus = (
-  orders: Order[],
+  orders: OrderWithDetails[],
   selectedStatus: OrderStatus | 'all'
-): Order[] => {
+): OrderWithDetails[] => {
   return orders.filter(
     (order) => selectedStatus === 'all' || order.status === selectedStatus
   );
@@ -72,9 +73,9 @@ export const filterOrdersByStatus = (
 
 //!! Handle reorder functionality
 //!! Adds all items from an order back to the cart
-export const handleReorder = (order: Order) => {
+export const handleReorder = (order: OrderWithDetails) => {
   // TODO: Implement reorder functionality
   // This would typically add all items from the order back to the cart
-  console.log('Reorder:', order.orderNumber);
+  console.log('Reorder:', order.order_number);
 };
 

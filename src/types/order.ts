@@ -36,18 +36,17 @@ export interface StatusConfig {
 
 
 export type OrderWithItems = {
-  id: number;
+  id: string;
   user_id: string | null;
   order_number: string;
   status: string;
   subtotal: number;
   delivery_fee: number;
   total: number;
-  payment_status: string;
   created_at: string;
   order_items: Array<{
-    id: number;
-    order_id: number;
+    id: string;
+    order_id: string;
     product_name: string;
     size_ml: number;
     quantity: number;
