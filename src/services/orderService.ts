@@ -81,7 +81,8 @@ export const createOrder = async (input: CreateOrderInput): Promise<OrderWithDet
         status: 'pending',
         subtotal: cart.sub_total,
         delivery_fee: cart.delivery_fee,
-        total: cart.total
+        total: cart.total,
+        addresses_id: address_id
       })
       .select()
       .single();
