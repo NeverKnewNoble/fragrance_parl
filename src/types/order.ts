@@ -44,6 +44,19 @@ export type OrderWithItems = {
   delivery_fee: number;
   total: number;
   created_at: string;
+  addresses_id: string | null;
+  addresses: {
+    id: string;
+    user_id: string;
+    address_line: string;
+    city: string;
+    region: string;
+    instructions: string;
+    is_default: boolean;
+    full_name: string;
+    email: string;
+    phone: string;
+  };
   order_items: Array<{
     id: string;
     order_id: string;

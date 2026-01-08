@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 6;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -68,6 +70,12 @@ export default function Dashboard() {
       delivered: orders.filter((o) => o.status === "delivered").length,
     };
   }, [orders]);
+  
+  //!! Pagination
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const startIndex = (currentPage - 1) * ordersPerPage;
+  const endIndex = startIndex + ordersPerPage;
+  const paginatedOrders = orders.slice(startIndex, endIndex);
 
   const totalProducts = useMemo(() => {
     if (typeof window === "undefined") return 0;
@@ -288,57 +296,49 @@ export default function Dashboard() {
                   <p className="mt-1 text-sm text-gray-500">Orders will appear here once customers place them</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paginatedOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="rounded-2xl border border-gray-200 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300"
+                      className="rounded-2xl border border-gray-200 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 h-full"
                     >
-                      <div className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-4">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => toggleOrderExpansion(order.id)}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                             >
                               {expandedOrders.has(order.id) ? (
-                                <ChevronUp className="h-5 w-5 text-gray-600" />
+                                <ChevronUp className="h-4 w-4 text-gray-600" />
                               ) : (
-                                <ChevronDown className="h-5 w-5 text-gray-600" />
+                                <ChevronDown className="h-4 w-4 text-gray-600" />
                               )}
                             </button>
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Order Number</p>
-                              <p className="text-lg font-bold text-black">{order.order_number}</p>
+                              <p className="text-sm font-bold text-black break-all">{order.order_number}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
                             <div className="text-right">
                               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total</p>
-                              <p className="text-lg font-bold text-black">₵{order.total.toFixed(2)}</p>
+                              <p className="text-sm font-bold text-black">₵{order.total.toFixed(2)}</p>
                             </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 mb-1">Date</p>
-                            <p className="text-sm text-gray-900">{new Date(order.created_at).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 mb-1">Subtotal</p>
-                            <p className="text-sm text-gray-900">₵{order.subtotal.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 mb-1">Delivery Fee</p>
-                            <p className="text-sm text-gray-900">₵{order.delivery_fee.toFixed(2)}</p>
-                          </div>
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+                          <span>Date: {new Date(order.created_at).toLocaleDateString()}</span>
+                          <span>Subtotal: ₵{order.subtotal.toFixed(2)}</span>
+                          <span>Delivery: ₵{order.delivery_fee.toFixed(2)}</span>
                         </div>
 
-                        <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                           <div className="flex-1">
-                            <p className="text-xs font-semibold text-gray-500 mb-2">Order Status</p>
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Order Status</p>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
                               order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                               order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
                               order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
@@ -349,11 +349,11 @@ export default function Dashboard() {
                             </span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-xs font-semibold text-gray-500 mb-2">Update Status</p>
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Update Status</p>
                             <select
                               value={order.status}
                               onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-black focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 transition-all"
+                              className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs text-black focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/20 transition-all"
                             >
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
@@ -364,33 +364,46 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        {order.user_id && (
-                          <div className="mt-4 pt-4 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500">Customer ID</p>
-                            <p className="text-sm text-gray-700 font-mono break-all">{order.user_id}</p>
+                        {/* {(() => {
+                          console.log("Order addresses:", order.addresses); // Debug log
+                          return null;
+                        })()} */}
+                        {order.addresses && expandedOrders.has(order.id) && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs font-semibold text-gray-500 mb-2">Customer Information</p>
+                            <div className="space-y-1">
+                              <p className="text-xs text-gray-900 font-medium">{order.addresses.full_name || 'N/A'}</p>
+                              <p className="text-xs text-gray-600">{order.addresses.email || 'N/A'}</p>
+                              <p className="text-xs text-gray-600">{order.addresses.phone || 'N/A'}</p>
+                              <div className="mt-2 pt-2 border-t border-gray-50">
+                                <p className="text-xs font-semibold text-gray-500 mb-1">Delivery Address</p>
+                                <p className="text-xs text-gray-900">{order.addresses.address_line || 'N/A'}</p>
+                                <p className="text-xs text-gray-600">{order.addresses.city || 'N/A'}, {order.addresses.region || 'N/A'}</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
 
                       {expandedOrders.has(order.id) && (
-                        <div className="border-t border-gray-200 bg-gray-50 p-6">
-                          <h4 className="text-sm font-bold text-black mb-4">Order Items</h4>
+                        <div className="border-t border-gray-200 bg-gray-50 p-3">
+                          <h4 className="text-xs font-bold text-black mb-2">Order Items</h4>
                           {order.order_items.length === 0 ? (
-                            <p className="text-sm text-gray-500">No items in this order</p>
+                            <p className="text-xs text-gray-500">No items in this order</p>
                           ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
                               {order.order_items.map((item) => (
                                 <div
                                   key={item.id}
-                                  className="flex items-center justify-between bg-white rounded-lg p-4 border border-gray-200"
+                                  className="flex items-center justify-between bg-white rounded-lg p-2 border border-gray-200"
                                 >
                                   <div className="flex-1">
-                                    <p className="font-semibold text-sm text-black">{item.product_name}</p>
-                                    <p className="text-xs text-gray-500 mt-1">{item.size_ml}ml</p>
+                                    <p className="font-semibold text-xs text-black truncate">{item.product_name}</p>
+                                    <p className="text-xs text-gray-500">{item.size_ml}ml</p>
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                    <p className="text-sm font-bold text-black">₵{item.price.toFixed(2)}</p>
+                                    <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                                    <p className="text-xs font-bold text-black">₵{item.price.toFixed(2)}</p>
                                   </div>
                                 </div>
                               ))}
@@ -401,9 +414,47 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            currentPage === page
+                              ? 'bg-[#D4AF37] text-white'
+                              : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+        </div>
+        )}
         </div>
       </section>
       <Footer />

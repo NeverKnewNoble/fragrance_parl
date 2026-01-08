@@ -7,6 +7,9 @@ export interface Address {
   region: string;
   instructions?: string;
   is_default: boolean;
+  full_name: string;
+  email: string;
+  phone: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -18,6 +21,9 @@ export type CreateAddressInput = {
   region: string;
   instructions?: string;
   is_default?: boolean;
+  full_name: string;
+  email: string;
+  phone: string;
 };
 
 //!! Update address input
@@ -27,4 +33,7 @@ export type UpdateAddressInput = {
   region?: string;
   instructions?: string;
   is_default?: boolean;
+  full_name?: string;
+  email?: string;
+  phone?: string;
 };

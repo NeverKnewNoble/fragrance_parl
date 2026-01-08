@@ -131,7 +131,10 @@ export default function CheckoutPage() {
           city: delivery.city,
           region: delivery.postalCode,
           instructions: delivery.instructions,
-          is_default: contact.save
+          is_default: contact.save,
+          full_name: contact.fullName,
+          email: contact.email,
+          phone: contact.phone
         });
 
         // Create order

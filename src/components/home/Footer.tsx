@@ -121,6 +121,14 @@ export function Footer() {
               >
                 Terms of Service
               </Link>
+              <a
+                href="https://neverknewnoble.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors duration-300 hover:text-[#D4AF37]"
+              >
+                Made by Noble
+              </a>
             </div>
           </div>
         </div>

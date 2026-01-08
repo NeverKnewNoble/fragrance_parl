@@ -16,6 +16,19 @@ export async function fetchAllOrders(): Promise<OrderWithItems[]> {
       delivery_fee,
       total,
       created_at,
+      addresses_id,
+      addresses!addresses_id (
+        id,
+        user_id,
+        address_line,
+        city,
+        region,
+        instructions,
+        is_default,
+        full_name,
+        email,
+        phone
+      ),
       order_items (
         id,
         order_id,
@@ -28,12 +41,12 @@ export async function fetchAllOrders(): Promise<OrderWithItems[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching orders:", error);
+    // console.error("Error fetching orders:", error);
     throw error;
   }
 
-  // Return data as-is since order_items already has the correct structure
-  return (data || []) as OrderWithItems[];
+  // console.log("Orders data:", data); // Debug log to see what we're getting
+  return (data || []) as unknown as OrderWithItems[];
 }
 
 export async function updateOrderStatus(
