@@ -127,6 +127,7 @@ export function NewArrivals() {
                         product_variants={product.product_variants}
                         price={product.price}
                         image={product.image}
+                        productId={product.id}
                         onAddToCart={() => handleAddToCart({ product })}
                         className="w-70 sm:w-75"
                       />

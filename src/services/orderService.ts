@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { OrderStatus } from '@/types/order';
 import { Address } from '@/types/address';
 import { Cart } from '@/types/cart';
@@ -28,6 +28,14 @@ export interface OrderItem {
   price: number;
   quantity: number;
   created_at?: string;
+  products?: {
+    id: string;
+    name: string;
+    product_images: Array<{
+      image_url: string;
+      is_primary: boolean;
+    }>;
+  };
 }
 
 //!! Order tracking from database (order_tracking table)
@@ -66,7 +74,7 @@ export const createOrder = async (input: CreateOrderInput): Promise<OrderWithDet
 
     // Start a transaction by creating the order first
     const { data: order, error: orderError } = await supabase
-      .from('order')
+      .from('orders')
       .insert({
         user_id,
         order_number: orderNumber,
@@ -127,17 +135,27 @@ export const getOrderWithDetails = async (orderId: string): Promise<OrderWithDet
   try {
     // Get order
     const { data: order, error: orderError } = await supabase
-      .from('order')
+      .from('orders')
       .select('*')
       .eq('id', orderId)
       .single();
 
     if (orderError) throw orderError;
 
-    // Get order items
+    // Get order items with product images
     const { data: orderItems, error: itemsError } = await supabase
       .from('order_items')
-      .select('*')
+      .select(`
+        *,
+        products!inner (
+          id,
+          name,
+          product_images (
+            image_url,
+            is_primary
+          )
+        )
+      `)
       .eq('order_id', orderId)
       .order('created_at', { ascending: true });
 
@@ -167,7 +185,7 @@ export const getOrderWithDetails = async (orderId: string): Promise<OrderWithDet
 export const getUserOrders = async (userId: string): Promise<OrderWithDetails[]> => {
   try {
     const { data: orders, error: ordersError } = await supabase
-      .from('order')
+      .from('orders')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -191,7 +209,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatusType
   try {
     // Update order status
     const { error: orderError } = await supabase
-      .from('order')
+      .from('orders')
       .update({ status })
       .eq('id', orderId);
 

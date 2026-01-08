@@ -15,7 +15,6 @@ export async function fetchAllOrders(): Promise<OrderWithItems[]> {
       subtotal,
       delivery_fee,
       total,
-      payment_status,
       created_at,
       order_items (
         id,
@@ -38,7 +37,7 @@ export async function fetchAllOrders(): Promise<OrderWithItems[]> {
 }
 
 export async function updateOrderStatus(
-  orderId: number,
+  orderId: string,
   newStatus: string
 ): Promise<void> {
   const { error } = await supabase

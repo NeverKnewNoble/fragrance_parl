@@ -6,25 +6,37 @@ import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { Package, Eye, RotateCcw, Truck } from 'lucide-react';
-import { Order, OrderStatus } from '@/types/order';
+import { OrderStatus } from '@/types/order';
 import { getStatusConfig, filterOrdersByStatus, handleReorder } from '@/utils/orderUtils';
 import { formatDate } from '@/utils/dateUtils';
-import { loadOrders } from '@/utils/orderStorage';
+import { getUserOrders } from '@/services/orderService';
+import { OrderWithDetails, OrderItem } from '@/services/orderService';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function MyOrdersPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
-  //!! Load orders (in production, this would come from a database)
+  //!! Load orders from database
   useEffect(() => {
-    if (user && !loading) {
-      const userOrders = loadOrders(user.id);
-      setOrders(userOrders);
-    }
+    const loadUserOrders = async () => {
+      if (user && !loading) {
+        try {
+          const userOrders = await getUserOrders(user.id);
+          setOrders(userOrders);
+        } catch (error) {
+          console.error('Error loading orders:', error);
+        } finally {
+          setIsLoadingOrders(false);
+        }
+      }
+    };
+
+    loadUserOrders();
   }, [user, loading]);
 
   //!! Redirect if not authenticated
@@ -38,7 +50,7 @@ export default function MyOrdersPage() {
   const filteredOrders = filterOrdersByStatus(orders, selectedStatus);
 
   //!! Show loading state
-  if (loading) {
+  if (loading || isLoadingOrders) {
     return (
       <div className="relative min-h-screen bg-white">
         <Navbar />
@@ -118,7 +130,7 @@ export default function MyOrdersPage() {
           {/* Orders List */}
           {filteredOrders.length > 0 ? (
             <div className="space-y-6">
-              {filteredOrders.map((order) => {
+              {filteredOrders.map((order: OrderWithDetails) => {
                 const statusConfig = getStatusConfig(order.status);
                 const StatusIcon = statusConfig.icon;
 
@@ -140,8 +152,8 @@ export default function MyOrdersPage() {
                             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500 mb-1">
                               Order Number
                             </p>
-                            <p className="text-lg font-bold text-gray-900">{order.orderNumber}</p>
-                            <p className="text-sm text-gray-600 mt-1">{formatDate(order.date)}</p>
+                            <p className="text-lg font-bold text-gray-900">{order.order_number}</p>
+                            <p className="text-sm text-gray-600 mt-1">{formatDate(order.created_at)}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -158,16 +170,16 @@ export default function MyOrdersPage() {
                     {/* Order Items */}
                     <div className="px-6 sm:px-8 py-6">
                       <div className="space-y-4 mb-6">
-                        {order.items.map((item, index) => (
+                        {order.order_items.map((item: OrderItem, index: number) => (
                           <div
                             key={index}
                             className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4"
                           >
                             <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-lg overflow-hidden bg-gray-200 shrink-0">
-                              {item.product.image ? (
+                              {item.products?.product_images && item.products.product_images.length > 0 ? (
                                 <Image
-                                  src={item.product.image}
-                                  alt={item.product.title}
+                                  src={item.products.product_images.find((img) => img.is_primary)?.image_url || item.products.product_images[0].image_url}
+                                  alt={item.product_name}
                                   fill
                                   className="object-cover"
                                 />
@@ -179,7 +191,7 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-                                {item.product.title}
+                                {item.product_name}
                               </h3>
                               <p className="text-sm text-gray-600">
                                 {item.size_ml}ml × {item.quantity}
@@ -187,7 +199,7 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-base sm:text-lg font-bold text-gray-900">
-                                ₵{(item.product.price * item.quantity).toLocaleString('en-US')}
+                                ₵{(item.price * item.quantity).toLocaleString('en-US')}
                               </p>
                             </div>
                           </div>
@@ -204,7 +216,7 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="flex items-center justify-between text-sm text-gray-600">
                               <span>Shipping:</span>
-                              <span>₵{order.shipping.toLocaleString('en-US')}</span>
+                              <span>₵{order.delivery_fee.toLocaleString('en-US')}</span>
                             </div>
                             <div className="flex items-center justify-between text-base sm:text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                               <span>Total:</span>
@@ -212,12 +224,6 @@ export default function MyOrdersPage() {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-3">
-                            {order.trackingNumber && (
-                              <button className="flex items-center gap-2 rounded-lg border-2 border-[#D4AF37] bg-white px-4 py-2 text-sm font-semibold text-[#D4AF37] transition-all duration-200 hover:bg-[#D4AF37]/5">
-                                <Truck className="h-4 w-4" />
-                                Track Order
-                              </button>
-                            )}
                             <button
                               onClick={() => handleReorder(order)}
                               className="flex items-center gap-2 rounded-lg border-2 border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50"
@@ -234,14 +240,6 @@ export default function MyOrdersPage() {
                             </Link>
                           </div>
                         </div>
-                        {order.shippingAddress && (
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500 mb-1">
-                              Shipping Address
-                            </p>
-                            <p className="text-sm text-gray-700">{order.shippingAddress}</p>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

@@ -18,18 +18,20 @@ import {
 import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import { CartItem } from '@/types/cart';
-import { calculateCartTotals, clearCart, loadCart } from '@/utils/cartStorage';
+import { createOrder } from '@/services/orderService';
+import { createAddress } from '@/services/addressService';
+import { toast } from '@/components/ui/alert';
 
 type CheckoutStep = 0 | 1 | 2;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { cart, isLoading: cartLoading, clearCartItems, getCartTotals } = useCart();
 
   const [step, setStep] = useState<CheckoutStep>(0);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [cartLoaded, setCartLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [contact, setContact] = useState({
@@ -55,19 +57,28 @@ export default function CheckoutPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!user || loading) return;
-    const cart = loadCart(user.id);
-    setCartItems(cart);
-    setCartLoaded(true);
-  }, [user, loading]);
-
-  useEffect(() => {
-    if (!loading && user && cartLoaded && cartItems.length === 0) {
+    if (!loading && user && !cartLoading && cart?.cart_items.length === 0) {
       router.push('/cart');
     }
-  }, [loading, user, cartItems.length, cartLoaded, router]);
+  }, [loading, user, cartLoading, cart, router]);
 
-  const { subtotal, shipping, total } = useMemo(() => calculateCartTotals(cartItems), [cartItems]);
+  const cartTotals = getCartTotals();
+  const cartItems = cart?.cart_items || [];
+
+  //!! Helper functions for cart item data
+  const getItemPrice = (item: any) => {
+    const variant = item.products?.product_variants?.find((v: any) => v.size_ml === item.size_ml);
+    return variant?.price || 0;
+  };
+
+  const getItemImage = (item: any) => {
+    const primaryImage = item.products?.product_images?.find((img: any) => img.is_primary);
+    return primaryImage?.image_url || item.products?.product_images?.[0]?.image_url || '/placeholder.jpg';
+  };
+
+  const getItemName = (item: any) => {
+    return item.products?.name || 'Unknown Product';
+  };
 
   const steps = useMemo(
     () => [
@@ -110,18 +121,48 @@ export default function CheckoutPage() {
     if (step === 1) {
       if (!canContinueFromDelivery) return;
 
-      if (!user) return;
+      if (!user || !cart) return;
       setSubmitting(true);
-      setStep(2);
 
-      window.setTimeout(() => {
-        clearCart(user.id);
-        router.push('/');
-      }, 2200);
+      try {
+        // Create address from delivery form data
+        const address = await createAddress(user.id, {
+          address_line: delivery.address,
+          city: delivery.city,
+          region: delivery.postalCode,
+          instructions: delivery.instructions,
+          is_default: contact.save
+        });
 
-      window.setTimeout(() => {
-        setSubmitting(false);
-      }, 2500);
+        // Create order
+        const order = await createOrder({
+          user_id: user.id,
+          cart: cart,
+          address_id: address.id
+        });
+
+        toast.success(`Order ${order.order_number} created successfully!`, {
+          durationMs: 3000
+        });
+
+        setStep(2);
+
+        // Clear cart and redirect after success
+        window.setTimeout(() => {
+          clearCartItems();
+          router.push('/');
+        }, 3000);
+
+      } catch (error) {
+        console.error('Error creating order:', error);
+        toast.error('Failed to create order. Please try again.', {
+          durationMs: 5000
+        });
+      } finally {
+        window.setTimeout(() => {
+          setSubmitting(false);
+        }, 3500);
+      }
 
       return;
     }
@@ -403,22 +444,22 @@ export default function CheckoutPage() {
 
                 <div className="space-y-4">
                   {cartItems.slice(0, 3).map((item, idx) => (
-                    <div key={`${item.product.title}-${item.size_ml}-${idx}`} className="flex items-center gap-3">
+                    <div key={`${item.id}-${item.size_ml}-${idx}`} className="flex items-center gap-3">
                       <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-gray-100 shrink-0">
-                        {item.product.image ? (
-                          <Image src={item.product.image} alt={item.product.title} fill className="object-cover" />
+                        {getItemImage(item) !== '/placeholder.jpg' ? (
+                          <Image src={getItemImage(item)} alt={getItemName(item)} fill className="object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-gray-100" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-gray-900">{item.product.title}</p>
+                        <p className="truncate text-sm font-semibold text-gray-900">{getItemName(item)}</p>
                         <p className="text-xs text-gray-800">
                           Qty: {item.quantity} · {item.size_ml}ml
                         </p>
                       </div>
                       <p className="text-sm font-semibold text-[#b28f1f]">
-                        ₵{(item.product.price * item.quantity).toLocaleString('en-US')}
+                        ₵{(getItemPrice(item) * item.quantity).toLocaleString('en-US')}
                       </p>
                     </div>
                   ))}
@@ -427,15 +468,15 @@ export default function CheckoutPage() {
                 <div className="mt-6 space-y-3 border-t border-gray-200 pt-6">
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>Subtotal</span>
-                    <span className="font-semibold">₵{subtotal.toLocaleString('en-US')}</span>
+                    <span className="font-semibold">₵{cartTotals.subtotal.toLocaleString('en-US')}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>Delivery</span>
-                    <span className="font-semibold">₵{shipping.toLocaleString('en-US')}</span>
+                    <span className="font-semibold">₵{cartTotals.deliveryFee.toLocaleString('en-US')}</span>
                   </div>
                   <div className="flex items-center justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-4">
                     <span>Total</span>
-                    <span>₵{total.toLocaleString('en-US')}</span>
+                    <span>₵{cartTotals.total.toLocaleString('en-US')}</span>
                   </div>
                 </div>
 

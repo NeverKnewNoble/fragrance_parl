@@ -8,23 +8,46 @@ import { ProductCard } from '@/components/ui/product-card';
 import { useAuth } from '@/hooks/useAuth';
 import { Heart, Trash2 } from 'lucide-react';
 import { handleAddToCart } from '@/utils/addToCart';
+import { loadFavorites, removeFavorite } from '@/utils/favorites';
+import { getAllProductsAndLinkages } from '@/utils/products';
 
 
 export default function FavoritesPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
 
-  //!! Load favorites from localStorage (in production, this would come from a database)
+  //!! Load favorites and products from database
   useEffect(() => {
-    if (user && !loading) {
-      const storedFavorites = localStorage.getItem(`favorites_${user.id}`);
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
+    const loadData = async () => {
+      if (user && !loading) {
+        try {
+          // Load all products
+          const products = await getAllProductsAndLinkages();
+          setAllProducts(products);
+          
+          // Load user favorites
+          const userFavorites = await loadFavorites(user.id);
+          setFavorites(userFavorites);
+          
+          // Filter products that are in favorites
+          const favoriteProductIds = userFavorites.map(fav => fav.product_id);
+          const filteredProducts = products.filter(product => 
+            favoriteProductIds.includes(product.id)
+          );
+          setFavoriteProducts(filteredProducts);
+        } catch (error) {
+          console.error('Failed to load data:', error);
+        } finally {
+          setIsLoadingFavorites(false);
+        }
       }
-      setIsLoadingFavorites(false);
-    }
+    };
+    
+    loadData();
   }, [user, loading]);
 
   //!! Redirect if not authenticated
@@ -35,16 +58,25 @@ export default function FavoritesPage() {
   }, [user, loading, router]);
 
   //!! Remove from favorites
-  const handleRemoveFavorite = (productTitle: string) => {
+  const handleRemoveFavorite = async (productId: string) => {
     if (!user) return;
     
-    const updatedFavorites = favorites.filter((title) => title !== productTitle);
-    setFavorites(updatedFavorites);
-    localStorage.setItem(`favorites_${user.id}`, JSON.stringify(updatedFavorites));
+    try {
+      const success = await removeFavorite(user.id, productId);
+      if (success) {
+        // Update local state
+        const updatedFavorites = favorites.filter(fav => fav.product_id !== productId);
+        setFavorites(updatedFavorites);
+        
+        // Update favorite products
+        const updatedProducts = favoriteProducts.filter(product => product.id !== productId);
+        setFavoriteProducts(updatedProducts);
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+    }
   };
 
-  //!! Get favorite products
-  const favoriteProducts: any[] = []; // Empty for now until favorites are properly implemented
 
   //!! Show loading state
   if (loading || isLoadingFavorites) {
@@ -95,20 +127,20 @@ export default function FavoritesPage() {
           {favoriteProducts.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {favoriteProducts.map((product, index) => (
-                <div key={`${product.title}-${index}`} className="relative group">
+                <div key={`${product.id}-${index}`} className="relative group">
                   <ProductCard
-                    title={product.title}
-                    // size_ml={product.size_ml}
-                    price={product.price}
-                    image={product.image}
-                    onAddToCart={() => handleAddToCart({ product })}
+                    title={product.name}
+                    product_variants={product.product_variants}
+                    image={product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url}
+                    productId={product.id}
+                    onAddToCart={() => handleAddToCart({ product_id: product.id })}
                     className="w-full"
                   />
                   {/* Remove from favorites button */}
                   <button
-                    onClick={() => handleRemoveFavorite(product.title)}
+                    onClick={() => handleRemoveFavorite(product.id)}
                     className="absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-red-500 shadow-lg transition-all duration-300 hover:bg-red-500 hover:text-white hover:scale-110 opacity-0 group-hover:opacity-100"
-                    aria-label={`Remove ${product.title} from favorites`}
+                    aria-label={`Remove ${product.name} from favorites`}
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>

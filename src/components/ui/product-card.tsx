@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { loadFavorites, toggleFavorite, isFavorite } from '@/utils/favoritesStorage';
+import { loadFavorites, toggleFavorite, isFavorite } from '@/utils/favorites';
  
 // Simple className utility function
 function cnUtil(...classes: (string | undefined | null | false)[]): string {
@@ -40,9 +40,16 @@ export function ProductCard({
 
   //!! Check if product is in favorites on mount and when user changes
   useEffect(() => {
-    const userId = user?.id;
-    setIsInFavorites(isFavorite(userId, title));
-  }, [user, title]);
+    const checkFavoriteStatus = async () => {
+      const userId = user?.id;
+      if (userId && productId) {
+        const favoriteStatus = await isFavorite(userId, productId);
+        setIsInFavorites(favoriteStatus);
+      }
+    };
+    
+    checkFavoriteStatus();
+  }, [user, productId]);
 
   // Get initial price from product_variants or fallback to price prop
   const initialPrice = product_variants?.[0]?.price || price || 0;
@@ -60,12 +67,14 @@ export function ProductCard({
   };
 
   // Handle favorite toggle
-  const handleToggleFavorite = (e: React.MouseEvent) => {
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const userId = user?.id;
-    const updatedFavorites = toggleFavorite(userId, title);
-    setIsInFavorites(updatedFavorites.includes(title));
+    if (!userId || !productId) return;
+    
+    const newFavoriteStatus = await toggleFavorite(userId, productId);
+    setIsInFavorites(newFavoriteStatus);
   };
 
   // Generate product ID from title if not provided

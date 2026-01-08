@@ -39,7 +39,7 @@ export async function getAllProductsAndLinkages(): Promise<getAllProductsWithLin
         `).order("created_at", { ascending: false });
 
         if (error) throw error;
-        // console.log(data);
+        console.log(data); 
         return (data || []) as getAllProductsWithLinkages[]
     } catch (error) {
         console.error("Error fetching products:", error);
