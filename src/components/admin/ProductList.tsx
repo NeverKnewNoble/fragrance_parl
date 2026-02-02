@@ -1,15 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Product } from "@/types/product";
-import { getAllProductsAndLinkages, deleteProduct, isActiveSwitch } from "@/utils/products";
-import { supabase } from "@/lib/supabase/client";
-import { Trash2, Image as ImageIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { getAllProductsAndLinkages, deleteProduct, isActiveSwitch, updateVariantStockStatus } from "@/utils/products";
+import { Trash2, Image as ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
+
+interface ProductVariantWithStatus {
+  id: number;
+  size_ml: number;
+  price: number;
+  is_out_of_stock?: boolean;
+  is_restocked?: boolean;
+}
+
+interface ProductWithVariants {
+  id: string;
+  name: string;
+  description: string;
+  slug: string;
+  isActive: boolean;
+  fragranceFamily: string;
+  sizes: number[];
+  images: string[];
+  variants: ProductVariantWithStatus[];
+}
 
 const ProductList = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithVariants[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (productId: string) => {
+    setExpandedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
 
   const fetchProducts = async () => {
     try {
@@ -18,10 +49,16 @@ const ProductList = () => {
 
       const productsData = await getAllProductsAndLinkages();
 
-      const formattedProducts: Product[] = productsData.map((p: any) => {
-        const primaryImage = p.product_images?.find((img: any) => img.is_primary);
+      const formattedProducts: ProductWithVariants[] = productsData.map((p: any) => {
         const images = p.product_images?.map((img: any) => img.image_url) || [];
         const sizes = p.product_variants?.map((v: any) => v.size_ml).sort((a: number, b: number) => a - b) || [];
+        const variants: ProductVariantWithStatus[] = p.product_variants?.map((v: any) => ({
+          id: v.id,
+          size_ml: v.size_ml,
+          price: v.price,
+          is_out_of_stock: v.is_out_of_stock ?? false,
+          is_restocked: v.is_restocked ?? false,
+        })).sort((a: ProductVariantWithStatus, b: ProductVariantWithStatus) => a.size_ml - b.size_ml) || [];
 
         return {
           id: p.id,
@@ -32,6 +69,7 @@ const ProductList = () => {
           fragranceFamily: p.fragrance_families?.name || 'Unknown',
           sizes: sizes,
           images: images,
+          variants: variants,
         };
       });
 
@@ -60,6 +98,12 @@ const ProductList = () => {
     }
 
     await deleteProduct(productId);
+    // Refresh the products list to reflect the change
+    fetchProducts();
+  };
+
+  const handleVariantStockToggle = async (variantId: number, field: 'is_out_of_stock' | 'is_restocked', value: boolean) => {
+    await updateVariantStockStatus(variantId, field, value);
     // Refresh the products list to reflect the change
     fetchProducts();
   };
@@ -112,7 +156,8 @@ const ProductList = () => {
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <React.Fragment key={product.id}>
+            <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
               <td className="py-4 px-4">
                 <div className="flex items-center gap-3">
                   {product.images.length > 0 ? (
@@ -149,16 +194,36 @@ const ProductList = () => {
                 </span>
               </td>
               <td className="py-4 px-4">
-                <div className="flex flex-wrap gap-1">
-                  {product.sizes.length > 0 ? (
-                    product.sizes.map((size, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
+                <div className="flex flex-wrap items-center gap-2">
+                  {product.variants.length > 0 ? (
+                    <>
+                      {product.variants.map((variant) => (
+                        <span
+                          key={variant.id}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            variant.is_out_of_stock
+                              ? 'bg-red-100 text-red-800'
+                              : variant.is_restocked
+                              ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {variant.size_ml}ml
+                          {variant.is_out_of_stock && ' (Out Of Stock)'}
+                          {variant.is_restocked && !variant.is_out_of_stock && ' ★'}
+                        </span>
+                      ))}
+                      <button
+                        onClick={() => toggleExpanded(product.id)}
+                        className="ml-1 inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
                       >
-                        {size}ml
-                      </span>
-                    ))
+                        {expandedProducts.has(product.id) ? (
+                          <><ChevronUp className="h-3 w-3" /> Hide</>
+                        ) : (
+                          <><ChevronDown className="h-3 w-3" /> Stock</>
+                        )}
+                      </button>
+                    </>
                   ) : (
                     <span className="text-xs text-gray-400">No sizes</span>
                   )}
@@ -188,6 +253,57 @@ const ProductList = () => {
                 </button>
               </td>
             </tr>
+            {/* Expandable Variant Stock Status Row */}
+            {expandedProducts.has(product.id) && product.variants.length > 0 && (
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <td colSpan={6} className="py-4 px-4">
+                  <div className="ml-4 pl-4 border-l-2 border-[#D4AF37]">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+                      Variant Stock Status
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {product.variants.map((variant) => (
+                        <div
+                          key={variant.id}
+                          className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-3"
+                        >
+                          <div>
+                            <p className="font-semibold text-sm text-gray-900">{variant.size_ml}ml</p>
+                            <p className="text-xs text-gray-500">₵{variant.price.toLocaleString()}</p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {/* Out of Stock Toggle */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={variant.is_out_of_stock ?? false}
+                                onChange={(e) => handleVariantStockToggle(variant.id, 'is_out_of_stock', e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
+                              <span className="ml-2 text-xs font-medium text-gray-700">Out Of Stock</span>
+                            </label>
+                            {/* Restocked Toggle */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={variant.is_restocked ?? false}
+                                onChange={(e) => handleVariantStockToggle(variant.id, 'is_restocked', e.target.checked)}
+                                className="sr-only peer"
+                                disabled={variant.is_out_of_stock}
+                              />
+                              <div className={`w-9 h-5 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#D4AF37]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${variant.is_out_of_stock ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-200 peer-checked:bg-[#D4AF37]'}`}></div>
+                              <span className={`ml-2 text-xs font-medium ${variant.is_out_of_stock ? 'text-gray-400' : 'text-gray-700'}`}>Restocked</span>
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>

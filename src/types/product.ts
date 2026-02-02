@@ -38,6 +38,8 @@ export interface getAllProductsWithLinkages {
     product_id: string;
     size_ml: number;
     price: number;
+    is_out_of_stock?: boolean;
+    is_restocked?: boolean;
   }>;
   created_at: string;
 }
@@ -46,6 +48,8 @@ export type ProductVariant = {
   size_ml: number;
   price: number;
   stock_quantity: number;
+  is_out_of_stock?: boolean;
+  is_restocked?: boolean;
 };
 
 export type ProductNote = {

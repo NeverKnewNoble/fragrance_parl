@@ -15,7 +15,12 @@ function cnUtil(...classes: (string | undefined | null | false)[]): string {
 export interface ProductCardProps {
   title: string;
   price?: number;
-  product_variants?: Array<{ size_ml: number; price: number }>;
+  product_variants?: Array<{
+    size_ml: number;
+    price: number;
+    is_out_of_stock?: boolean;
+    is_restocked?: boolean;
+  }>;
   image?: string;
   imageAlt?: string;
   onAddToCart?: () => void;
@@ -53,9 +58,16 @@ export function ProductCard({
 
   // Get initial price from product_variants or fallback to price prop
   const initialPrice = product_variants?.[0]?.price || price || 0;
-  
+
   // Format price as Ghanaian Cedi (only currency)
   const formattedPrice = `₵${initialPrice.toLocaleString('en-US')}`;
+
+  // Compute product-level stock status from variants
+  const allVariantsOutOfStock = product_variants?.length
+    ? product_variants.every(v => v.is_out_of_stock)
+    : false;
+  const anyVariantRestocked = product_variants?.some(v => v.is_restocked) ?? false;
+  const isAddToCartDisabled = allVariantsOutOfStock;
 
   // Handle add to cart click
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -98,6 +110,20 @@ export function ProductCard({
     >
       {/* Product Image Container - Fills entire card */}
       <div className="relative w-full min-h-87.5 sm:min-h-100 md:min-h-125 overflow-hidden flex flex-col">
+        {/* Stock Status Badges - Top Left */}
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          {allVariantsOutOfStock && (
+            <span className="inline-flex items-center rounded-full bg-red-500/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur-sm">
+              Out of Stock
+            </span>
+          )}
+          {anyVariantRestocked && !allVariantsOutOfStock && (
+            <span className="inline-flex items-center rounded-full bg-[#D4AF37]/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur-sm">
+              Restocked
+            </span>
+          )}
+        </div>
+
         {/* Favorite Button - Top Right */}
         <button
           onClick={handleToggleFavorite}
@@ -157,18 +183,19 @@ export function ProductCard({
             </p>
             <button
               onClick={handleAddToCart}
+              disabled={isAddToCartDisabled}
               className={cnUtil(
-                'rounded-full bg-white px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm cursor-pointer font-semibold text-gray-900',
+                'rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold',
                 'shadow-[0_4px_16px_rgba(0,0,0,0.12)]',
                 'transition-all duration-300 ease-out',
-                'hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)]',
-                'hover:scale-105',
-                'active:scale-100',
-                'focus:outline-none focus:ring-2 focus:ring-gray-400/50'
+                'focus:outline-none focus:ring-2 focus:ring-gray-400/50',
+                isAddToCartDisabled
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-white text-gray-900 cursor-pointer hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)] hover:scale-105 active:scale-100'
               )}
-              aria-label={`Add ${title} to cart`}
+              aria-label={isAddToCartDisabled ? `${title} is out of stock` : `Add ${title} to cart`}
             >
-              Add to Cart +
+              {isAddToCartDisabled ? 'Out of Stock' : 'Add to Cart +'}
             </button>
           </div>
         </div>

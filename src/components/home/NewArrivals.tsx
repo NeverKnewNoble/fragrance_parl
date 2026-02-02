@@ -5,7 +5,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { scrollLeft, scrollRight } from '@/utils/scrollFunctions';
 import { handleAddToCart } from '@/utils/addToCart';
-import { getAllProductsAndLinkages } from '@/utils/products';
+import { getLatestProducts } from '@/utils/products';
 
 export function NewArrivals() {
   //!! Scroll container reference
@@ -16,9 +16,9 @@ export function NewArrivals() {
   useEffect(() => {
     const fetchNewArrivals = async () => {
       try {
-        const allProducts = await getAllProductsAndLinkages();
-        // Get the latest 6 products for new arrivals
-        const newArrivals = allProducts.slice(0, 6).map(product => ({
+        // Fetch only the latest 5 products directly from database
+        const latestProducts = await getLatestProducts(5);
+        const newArrivals = latestProducts.map(product => ({
           title: product.name,
           product_variants: product.product_variants,
           price: product.price,

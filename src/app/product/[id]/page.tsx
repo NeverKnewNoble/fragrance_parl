@@ -18,7 +18,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState({ ml: 75, price: 120 });
+  const [selectedSize, setSelectedSize] = useState<{ ml: number; price: number; is_out_of_stock?: boolean; is_restocked?: boolean }>({ ml: 75, price: 120, is_out_of_stock: false, is_restocked: false });
   const [isFavorite, setIsFavorite] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -47,8 +47,10 @@ export default function ProductDetailPage() {
             family: foundProduct.fragrance_families?.[0]?.name || 'Unknown',
             sizes: foundProduct.product_variants?.map((variant: any) => ({
               ml: variant.size_ml,
-              price: variant.price
-          })) || [{ ml: 50, price: foundProduct.price }],
+              price: variant.price,
+              is_out_of_stock: variant.is_out_of_stock ?? false,
+              is_restocked: variant.is_restocked ?? false,
+            })) || [{ ml: 50, price: foundProduct.price, is_out_of_stock: false, is_restocked: false }],
             notes: {
               top: foundProduct.product_notes?.filter((note: any) => note.note_type === 'top').map((note: any) => note.note_name) || [],
               middle: foundProduct.product_notes?.filter((note: any) => note.note_type === 'middle').map((note: any) => note.note_name) || [],
@@ -187,11 +189,21 @@ export default function ProductDetailPage() {
 
             {/* Right: Product Info */}
             <div className="flex flex-col">
-              {/* Family Badge */}
-              <div className="mb-4 inline-flex">
+              {/* Family Badge and Stock Status */}
+              <div className="mb-4 inline-flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D4AF37]">
                   {product.family}
                 </span>
+                {product.sizes.every((s: any) => s.is_out_of_stock) && (
+                  <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+                    Out of Stock
+                  </span>
+                )}
+                {product.sizes.some((s: any) => s.is_restocked) && !product.sizes.every((s: any) => s.is_out_of_stock) && (
+                  <span className="inline-flex items-center rounded-full bg-[#D4AF37] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+                    Restocked
+                  </span>
+                )}
               </div>
 
               {/* Product Title */}
@@ -281,14 +293,27 @@ export default function ProductDetailPage() {
                   {product.sizes.map((size: any) => (
                     <button
                       key={size.ml}
-                      onClick={() => setSelectedSize(size)}
-                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                        selectedSize.ml === size.ml
-                          ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      onClick={() => !size.is_out_of_stock && setSelectedSize(size)}
+                      disabled={size.is_out_of_stock}
+                      className={`relative rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                        size.is_out_of_stock
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : selectedSize.ml === size.ml
+                          ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37] cursor-pointer'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 cursor-pointer'
                       }`}
                     >
                       {size.ml}ml
+                      {size.is_out_of_stock && (
+                        <span className="absolute -top-3 -right-3 rounded-full bg-red-500 px-1.5 py-0.5 text-[7px] font-bold text-white whitespace-nowrap">
+                          Out Of Stock
+                        </span>
+                      )}
+                      {size.is_restocked && !size.is_out_of_stock && (
+                        <span className="absolute -top-2 -right-2 rounded-full bg-[#D4AF37] px-1.5 py-0.5 text-[8px] font-bold text-white">
+                          NEW
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -322,10 +347,15 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={handleAddToCartClick}
-                  className="group/button relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-linear-to-r from-[#D4AF37] via-[#f3de9e] to-[#D4AF37] px-6 py-4 text-sm font-semibold text-black shadow-[0_22px_60px_rgba(212,175,55,0.45)] transition-transform duration-200 hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                  disabled={selectedSize.is_out_of_stock}
+                  className={`group/button relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-4 text-sm font-semibold transition-transform duration-200 ${
+                    selectedSize.is_out_of_stock
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                      : 'bg-linear-to-r from-[#D4AF37] via-[#f3de9e] to-[#D4AF37] text-black shadow-[0_22px_60px_rgba(212,175,55,0.45)] hover:-translate-y-px active:translate-y-0 cursor-pointer'
+                  }`}
                 >
                   <ShoppingCart className="h-5 w-5 transition-transform duration-200 group-hover/button:scale-110" />
-                  Add to Cart
+                  {selectedSize.is_out_of_stock ? 'Out of Stock' : 'Add to Cart'}
                 </button>
                 <button
                   onClick={() => setIsFavorite(!isFavorite)}
