@@ -38,7 +38,7 @@ export function Browse() {
           product_variants: product.product_variants,
           price: product.price,
           image: product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url,
-          family: product.fragrance_families?.[0]?.name?.toLowerCase() || 'unknown',
+          family: (product.fragrance_families as any)?.name?.toLowerCase() || 'unknown',
           id: product.id,
           slug: product.slug,
           description: product.description

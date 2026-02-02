@@ -42,9 +42,9 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
 
   // Variants state
   const [variants, setVariants] = useState<ProductVariant[]>([
-    { size_ml: 50, price: 100, stock_quantity: 10 },
-    { size_ml: 75, price: 140, stock_quantity: 10 },
-    { size_ml: 100, price: 180, stock_quantity: 10 },
+    { size_ml: 50, price: 100, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
+    { size_ml: 75, price: 140, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
+    { size_ml: 100, price: 180, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
   ]);
 
   // Notes state
@@ -98,7 +98,7 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
   const addVariant = () => {
     setVariants([
       ...variants,
-      { size_ml: 50, price: 100, stock_quantity: 10 },
+      { size_ml: 50, price: 100, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
     ]);
   };
 
@@ -111,10 +111,10 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
   const updateVariant = (
     index: number,
     field: keyof ProductVariant,
-    value: number
+    value: number | boolean
   ) => {
     const updated = [...variants];
-    updated[index][field] = value;
+    (updated[index] as any)[field] = value;
     setVariants(updated);
   };
 
@@ -237,6 +237,8 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
         size_ml: variant.size_ml,
         price: variant.price,
         stock_quantity: variant.stock_quantity,
+        is_out_of_stock: variant.is_out_of_stock ?? false,
+        is_restocked: variant.is_restocked ?? false,
       }));
 
       const { error: variantsError } = await supabase
@@ -281,9 +283,9 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
       setImages([]);
       setPrimaryImageIndex(0);
       setVariants([
-        { size_ml: 50, price: 100, stock_quantity: 10 },
-        { size_ml: 75, price: 140, stock_quantity: 10 },
-        { size_ml: 100, price: 180, stock_quantity: 10 },
+        { size_ml: 50, price: 100, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
+        { size_ml: 75, price: 140, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
+        { size_ml: 100, price: 180, stock_quantity: 10, is_out_of_stock: false, is_restocked: false },
       ]);
       setTopNotes([""]);
       setMiddleNotes([""]);
@@ -454,6 +456,33 @@ const ProductUploadForm = ({ onProductCreated }: Props) => {
                       )
                     }
                     className="block w-full px-3 text-black  py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D4AF37] focus:border-[#D4AF37]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 items-center">
+                  <label className="block text-xs font-semibold text-gray-700 whitespace-nowrap">
+                    Out Of Stock
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={variant.is_out_of_stock ?? false}
+                    onChange={(e) =>
+                      updateVariant(index, "is_out_of_stock", e.target.checked)
+                    }
+                    className="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 items-center">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Restocked
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={variant.is_restocked ?? false}
+                    onChange={(e) =>
+                      updateVariant(index, "is_restocked", e.target.checked)
+                    }
+                    disabled={variant.is_out_of_stock}
+                    className="h-5 w-5 text-[#D4AF37] focus:ring-[#D4AF37] border-gray-300 rounded cursor-pointer disabled:opacity-50"
                   />
                 </div>
                 <button
