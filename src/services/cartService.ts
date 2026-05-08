@@ -1,333 +1,207 @@
-import { supabase } from '@/lib/supabase/client';
-import { Cart, CartItem, AddToCartInput, UpdateCartItemInput, CartWithProductDetails } from '@/types/cart';
-import { getAllProductsWithLinkages } from '@/types/product';
+"use server";
 
-//!! Get or create user cart
-export const getOrCreateCart = async (userId: string): Promise<Cart> => {
-  try {
-    // First try to get existing cart (without cart_items field)
-    const { data: existingCart, error: cartError } = await supabase
-      .from('cart')
-      .select('id, user_id, sub_total, delivery_fee, total, created_at')
-      .eq('user_id', userId)
-      .single();
+import { and, eq } from "drizzle-orm";
 
-    if (cartError && cartError.code !== 'PGRST116') {
-      throw cartError;
-    }
+import { db } from "@/db";
+import { cart, cartItems } from "@/db/schema";
+import { auth } from "@/auth";
+import type {
+  Cart,
+  AddToCartInput,
+  UpdateCartItemInput,
+} from "@/types/cart";
 
-    if (existingCart) {
-      // Get cart items with product details
-      const { data: cartItems, error: itemsError } = await supabase
-        .from('cart_items')
-        .select(`
-          *,
-          products (
-            id,
-            name,
-            slug,
-            is_active,
-            product_variants (
-              size_ml,
-              price
-            ),
-            product_images (
-              image_url,
-              is_primary
-            )
-          )
-        `)
-        .eq('user_id', userId);
+const DEFAULT_DELIVERY_FEE = 15;
+const DEFAULT_SIZE_ML = 50;
 
-      if (itemsError) throw itemsError;
+async function requireUserId(passedUserId?: string): Promise<string> {
+  const session = await auth();
+  const sessionId = session?.user?.id;
+  if (!sessionId) throw new Error("User not authenticated");
+  if (passedUserId && passedUserId !== sessionId) {
+    throw new Error("User mismatch");
+  }
+  return sessionId;
+}
 
-      return {
-        ...existingCart,
-        cart_items: cartItems || []
-      };
-    }
+// !! Fetch cart_items joined with their product, variants, and images
+async function fetchCartItemsWithProducts(userId: string) {
+  const items = await db.query.cartItems.findMany({
+    where: eq(cartItems.userId, userId),
+    with: {
+      product: {
+        with: { variants: true, images: true },
+      },
+    },
+  });
 
-    // Create new cart (handle cart_items constraint)
-    let newCart;
-    
-    // Try different approaches for the cart_items constraint
-    try {
-      // Method 1: Try with properly formatted empty array
-      const { data, error } = await supabase
-        .from('cart')
-        .insert({
-          user_id: userId,
-          cart_items: '{}', // Try empty array in PostgreSQL format
-          sub_total: 0,
-          delivery_fee: 0,
-          total: 0
-        })
-        .select('id, user_id, sub_total, delivery_fee, total, created_at')
-        .single();
-      
-      if (error) throw error;
-      newCart = data;
-    } catch (insertError1) {
-      try {
-        // Method 2: Try with null (might work if constraint allows it)
-        const { data, error } = await supabase
-          .from('cart')
-          .insert({
-            user_id: userId,
-            cart_items: null,
-            sub_total: 0,
-            delivery_fee: 0,
-            total: 0
-          })
-          .select('id, user_id, sub_total, delivery_fee, total, created_at')
-          .single();
-        
-        if (error) throw error;
-        newCart = data;
-      } catch (insertError2) {
-        try {
-          // Method 3: Create without cart_items, then update with PostgreSQL array format
-          const { data, error } = await supabase
-            .from('cart')
-            .insert({
-              user_id: userId,
-              sub_total: 0,
-              delivery_fee: 0,
-              total: 0
-            })
-            .select('id, user_id, sub_total, delivery_fee, total, created_at')
-            .single();
-          
-          if (error) throw error;
-          
-          // Update with PostgreSQL empty array format
-          const { data: updatedCart, error: updateError } = await supabase
-            .from('cart')
-            .update({ cart_items: '{}' })
-            .eq('id', data.id)
-            .select('id, user_id, sub_total, delivery_fee, total, created_at')
-            .single();
-          
-          if (updateError) throw updateError;
-          newCart = updatedCart;
-        } catch (insertError3) {
-          // Method 4: Last resort - create without cart_items and skip the update
-          const { data, error } = await supabase
-            .from('cart')
-            .insert({
-              user_id: userId,
-              sub_total: 0,
-              delivery_fee: 0,
-              total: 0
-            })
-            .select('id, user_id, sub_total, delivery_fee, total, created_at')
-            .single();
-          
-          if (error) throw error;
-          newCart = data;
-          console.warn('Cart created without cart_items field - this may cause issues later');
+  return items.map((it: any) => ({
+    id: it.id,
+    user_id: it.userId,
+    product_id: it.productId,
+    size_ml: it.sizeMl,
+    quantity: it.quantity,
+    products: it.product
+      ? {
+          id: it.product.id,
+          name: it.product.name,
+          slug: it.product.slug,
+          is_active: it.product.isActive,
+          product_variants: (it.product.variants ?? []).map((v: any) => ({
+            size_ml: v.sizeMl,
+            price: v.price,
+          })),
+          product_images: (it.product.images ?? []).map((img: any) => ({
+            image_url: img.imageUrl,
+            is_primary: img.isPrimary,
+          })),
         }
-      }
-    }
+      : undefined,
+  }));
+}
 
-    return {
-      ...newCart,
-      cart_items: []
-    };
-  } catch (error) {
-    console.error('Error getting or creating cart:', error);
-    throw error;
+async function ensureCartRow(userId: string) {
+  const [existing] = await db
+    .select()
+    .from(cart)
+    .where(eq(cart.userId, userId))
+    .limit(1);
+  if (existing) return existing;
+  const [created] = await db.insert(cart).values({ userId }).returning();
+  return created;
+}
+
+async function recalculateCartTotals(userId: string): Promise<Cart> {
+  const items = await fetchCartItemsWithProducts(userId);
+  const subtotal = items.reduce((sum, it) => {
+    const variant = it.products?.product_variants?.find(
+      (v: any) => v.size_ml === it.size_ml
+    );
+    const price = variant?.price ?? 0;
+    return sum + price * it.quantity;
+  }, 0);
+  const deliveryFee = subtotal > 0 ? DEFAULT_DELIVERY_FEE : 0;
+  const total = subtotal + deliveryFee;
+
+  const [updated] = await db
+    .update(cart)
+    .set({ subTotal: subtotal, deliveryFee, total })
+    .where(eq(cart.userId, userId))
+    .returning();
+
+  return {
+    id: updated.id,
+    user_id: updated.userId,
+    cart_items: items as any,
+    sub_total: updated.subTotal,
+    delivery_fee: updated.deliveryFee,
+    total: updated.total,
+    created_at: updated.createdAt,
+  };
+}
+
+// !! Public: get or lazily create the user's cart with items + nested product info
+export async function getOrCreateCart(userId: string): Promise<Cart> {
+  const sessionId = await requireUserId(userId);
+  const c = await ensureCartRow(sessionId);
+  const items = await fetchCartItemsWithProducts(sessionId);
+  return {
+    id: c.id,
+    user_id: c.userId,
+    cart_items: items as any,
+    sub_total: c.subTotal,
+    delivery_fee: c.deliveryFee,
+    total: c.total,
+    created_at: c.createdAt,
+  };
+}
+
+// !! Public: add an item to the cart (or increment quantity if same product+size)
+export async function addToCart(
+  userId: string,
+  input: AddToCartInput
+): Promise<Cart> {
+  const sessionId = await requireUserId(userId);
+  await ensureCartRow(sessionId);
+
+  const sizeMl = input.size_ml ?? DEFAULT_SIZE_ML;
+  const qty = input.quantity ?? 1;
+
+  const [existing] = await db
+    .select()
+    .from(cartItems)
+    .where(
+      and(
+        eq(cartItems.userId, sessionId),
+        eq(cartItems.productId, input.product_id),
+        eq(cartItems.sizeMl, sizeMl)
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(cartItems)
+      .set({ quantity: existing.quantity + qty })
+      .where(eq(cartItems.id, existing.id));
+  } else {
+    await db.insert(cartItems).values({
+      userId: sessionId,
+      productId: input.product_id,
+      sizeMl,
+      quantity: qty,
+    });
   }
-};
 
-//!! Add item to cart
-export const addToCart = async (userId: string, input: AddToCartInput): Promise<Cart> => {
+  return await recalculateCartTotals(sessionId);
+}
+
+// !! Public: change a cart item's quantity (clamped to >= 1)
+export async function updateCartItem(
+  userId: string,
+  input: UpdateCartItemInput
+): Promise<Cart> {
+  const sessionId = await requireUserId(userId);
+  await db
+    .update(cartItems)
+    .set({ quantity: Math.max(1, input.quantity) })
+    .where(and(eq(cartItems.id, input.id), eq(cartItems.userId, sessionId)));
+  return await recalculateCartTotals(sessionId);
+}
+
+// !! Public: remove an item from the cart
+export async function removeFromCart(
+  userId: string,
+  itemId: string
+): Promise<Cart> {
+  const sessionId = await requireUserId(userId);
+  await db
+    .delete(cartItems)
+    .where(and(eq(cartItems.id, itemId), eq(cartItems.userId, sessionId)));
+  return await recalculateCartTotals(sessionId);
+}
+
+// !! Public: clear all items + reset totals
+export async function clearCart(userId: string): Promise<void> {
+  const sessionId = await requireUserId(userId);
+  await db.delete(cartItems).where(eq(cartItems.userId, sessionId));
+  await db
+    .update(cart)
+    .set({ subTotal: 0, deliveryFee: 0, total: 0 })
+    .where(eq(cart.userId, sessionId));
+}
+
+// !! Public: total quantity across all cart items (for nav badge)
+export async function getCartCount(userId: string): Promise<number> {
   try {
-    const cart = await getOrCreateCart(userId);
-
-    // Check if item already exists in cart
-    const { data: existingItem, error: checkError } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('product_id', input.product_id)
-      .eq('size_ml', input.size_ml || 50)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw checkError;
-    }
-
-    if (existingItem) {
-      // Update quantity if item exists
-      const { error: updateError } = await supabase
-        .from('cart_items')
-        .update({
-          quantity: existingItem.quantity + (input.quantity || 1)
-        })
-        .eq('id', existingItem.id);
-
-      if (updateError) throw updateError;
-    } else {
-      // Add new item
-      const { error: insertError } = await supabase
-        .from('cart_items')
-        .insert({
-          user_id: userId,
-          product_id: input.product_id,
-          quantity: input.quantity || 1,
-          size_ml: input.size_ml || 50
-        });
-
-      if (insertError) throw insertError;
-    }
-
-    // Recalculate cart totals
-    return await recalculateCartTotals(userId);
+    const sessionId = await requireUserId(userId);
+    const rows = await db
+      .select({ quantity: cartItems.quantity })
+      .from(cartItems)
+      .where(eq(cartItems.userId, sessionId));
+    return rows.reduce((sum, r) => sum + r.quantity, 0);
   } catch (error) {
-    console.error('Error adding to cart:', error);
-    throw error;
-  }
-};
-
-//!! Update cart item quantity
-export const updateCartItem = async (userId: string, input: UpdateCartItemInput): Promise<Cart> => {
-  try {
-    const { error } = await supabase
-      .from('cart_items')
-      .update({
-        quantity: Math.max(1, input.quantity)
-      })
-      .eq('id', input.id)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    return await recalculateCartTotals(userId);
-  } catch (error) {
-    console.error('Error updating cart item:', error);
-    throw error;
-  }
-};
-
-//!! Remove item from cart
-export const removeFromCart = async (userId: string, itemId: string): Promise<Cart> => {
-  try {
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('id', itemId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    return await recalculateCartTotals(userId);
-  } catch (error) {
-    console.error('Error removing from cart:', error);
-    throw error;
-  }
-};
-
-//!! Clear cart
-export const clearCart = async (userId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    // Reset cart totals
-    await supabase
-      .from('cart')
-      .update({
-        sub_total: 0,
-        delivery_fee: 0,
-        total: 0
-      })
-      .eq('user_id', userId);
-  } catch (error) {
-    console.error('Error clearing cart:', error);
-    throw error;
-  }
-};
-
-//!! Recalculate cart totals
-const recalculateCartTotals = async (userId: string): Promise<Cart> => {
-  try {
-    // Get all cart items with product details
-    const { data: cartItems, error: itemsError } = await supabase
-      .from('cart_items')
-      .select(`
-        *,
-        products (
-          id,
-          name,
-          slug,
-          is_active,
-          product_variants (
-            size_ml,
-            price
-          ),
-          product_images (
-            image_url,
-            is_primary
-          )
-        )
-      `)
-      .eq('user_id', userId);
-
-    if (itemsError) throw itemsError;
-
-    // Calculate totals based on product variants
-    const subtotal = (cartItems || []).reduce((sum, item) => {
-      // Find the variant that matches the cart item size
-      const variant = item.products?.product_variants?.find((v: any) => v.size_ml === item.size_ml);
-      const price = variant?.price || 0;
-      return sum + price * item.quantity;
-    }, 0);
-    
-    const deliveryFee = subtotal > 0 ? 15 : 0;
-    const total = subtotal + deliveryFee;
-
-    // Update cart totals
-    const { data: updatedCart, error: updateError } = await supabase
-      .from('cart')
-      .update({
-        sub_total: subtotal,
-        delivery_fee: deliveryFee,
-        total: total
-      })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    return {
-      ...updatedCart,
-      cart_items: cartItems || []
-    };
-  } catch (error) {
-    console.error('Error recalculating cart totals:', error);
-    throw error;
-  }
-};
-
-//!! Get cart count
-export const getCartCount = async (userId: string): Promise<number> => {
-  try {
-    const { data, error } = await supabase
-      .from('cart_items')
-      .select('quantity')
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    return (data || []).reduce((sum, item) => sum + item.quantity, 0);
-  } catch (error) {
-    console.error('Error getting cart count:', error);
+    console.error("Error getting cart count:", error);
     return 0;
   }
-};
+}

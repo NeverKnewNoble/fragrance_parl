@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { updatePassword } from '@/lib/auth';
-import { supabase } from '@/lib/supabase/client';
+import { useSession } from 'next-auth/react';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -16,18 +16,9 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
-
-  //!! Check if we have a valid session/token
-  useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setIsValidToken(!!session);
-    };
-    checkSession();
-  }, []);
+  const { data: session, status } = useSession();
+  const isValidToken: boolean | null =
+    status === 'loading' ? null : !!session?.user;
 
   //!! Handle form submit with Supabase password update
   const handleSubmit = async (e: React.FormEvent) => {

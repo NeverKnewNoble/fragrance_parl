@@ -4,10 +4,9 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { Menu, X, ShoppingCart, ChevronDown, User, LogOut, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { signOut } from '@/lib/auth';
+import { signOut, isCurrentUserAdmin } from '@/lib/auth';
 import { getCartItemCount } from '@/utils/cartUtils';
 import { CartItem } from '@/types/cart';
-import { supabase } from '@/lib/supabase/client';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,14 +36,9 @@ export function Navbar() {
     // Check if user is admin
     const checkAdminRole = async () => {
       try {
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_role')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-          
-        setIsAdmin(!roleError && roleData?.role === 'admin');
-      } catch (error) {
+        const adminFlag = await isCurrentUserAdmin();
+        setIsAdmin(adminFlag);
+      } catch {
         setIsAdmin(false);
       }
     };
@@ -83,7 +77,7 @@ export function Navbar() {
   //!! Get user display name
   const getUserName = () => {
     if (!user) return '';
-    return user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+    return user.name || user.email?.split('@')[0] || 'User';
   };
 
   //!! Handle logout

@@ -1,16 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
   images: {
-    domains: ['zrbcztvcldcoiikbgctm.supabase.co'],
+    // URL-only image storage after the Supabase migration: allow common
+    // hosted-image domains. Tighten these once a real upload provider is wired.
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'zrbcztvcldcoiikbgctm.supabase.co',
-        pathname: '/storage/v1/object/public/images/**',
-      },
+      { protocol: "https", hostname: "**" },
     ],
   },
 };

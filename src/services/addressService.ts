@@ -1,142 +1,173 @@
-import { supabase } from '@/lib/supabase';
-import { Address, CreateAddressInput, UpdateAddressInput } from '@/types/address';
+"use server";
 
-//!! Get user addresses
-export const getUserAddresses = async (userId: string): Promise<Address[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
+import { and, desc, eq } from "drizzle-orm";
 
-    if (error) throw error;
+import { db } from "@/db";
+import { addresses } from "@/db/schema";
+import { auth } from "@/auth";
+import type {
+  Address,
+  CreateAddressInput,
+  UpdateAddressInput,
+} from "@/types/address";
 
-    return data || [];
-  } catch (error) {
-    console.error('Error getting user addresses:', error);
-    throw error;
+async function requireUserId(passedUserId?: string): Promise<string> {
+  const session = await auth();
+  const sessionId = session?.user?.id;
+  if (!sessionId) throw new Error("User not authenticated");
+  if (passedUserId && passedUserId !== sessionId) {
+    throw new Error("User mismatch");
   }
-};
+  return sessionId;
+}
 
-//!! Get default address
-export const getDefaultAddress = async (userId: string): Promise<Address | null> => {
+function mapAddress(a: any): Address {
+  return {
+    id: a.id,
+    user_id: a.userId,
+    full_name: a.fullName,
+    email: a.email,
+    phone: a.phone,
+    address_line: a.addressLine,
+    city: a.city,
+    region: a.region,
+    instructions: a.instructions ?? undefined,
+    is_default: a.isDefault,
+    created_at: a.createdAt,
+    updated_at: a.updatedAt,
+  };
+}
+
+// !! All addresses for the current user (defaults first, newest after)
+export async function getUserAddresses(userId: string): Promise<Address[]> {
+  const sessionId = await requireUserId(userId);
+  const rows = await db
+    .select()
+    .from(addresses)
+    .where(eq(addresses.userId, sessionId))
+    .orderBy(desc(addresses.isDefault), desc(addresses.createdAt));
+  return rows.map(mapAddress);
+}
+
+// !! The default address (or null)
+export async function getDefaultAddress(
+  userId: string
+): Promise<Address | null> {
   try {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_default', true)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
-
-    return data;
+    const sessionId = await requireUserId(userId);
+    const [row] = await db
+      .select()
+      .from(addresses)
+      .where(
+        and(eq(addresses.userId, sessionId), eq(addresses.isDefault, true))
+      )
+      .limit(1);
+    return row ? mapAddress(row) : null;
   } catch (error) {
-    console.error('Error getting default address:', error);
+    console.error("Error getting default address:", error);
     return null;
   }
-};
+}
 
-//!! Create address
-export const createAddress = async (userId: string, input: CreateAddressInput): Promise<Address> => {
-  try {
-    // If setting as default, unset other default addresses first
-    if (input.is_default) {
-      await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', userId);
-    }
+// !! Create address; if marked default, clear other defaults first
+export async function createAddress(
+  userId: string,
+  input: CreateAddressInput
+): Promise<Address> {
+  const sessionId = await requireUserId(userId);
 
-    const { data, error } = await supabase
-      .from('addresses')
-      .insert({
-        user_id: userId,
-        ...input
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  } catch (error) {
-    console.error('Error creating address:', error);
-    throw error;
+  if (input.is_default) {
+    await db
+      .update(addresses)
+      .set({ isDefault: false })
+      .where(eq(addresses.userId, sessionId));
   }
-};
 
-//!! Update address
-export const updateAddress = async (addressId: string, userId: string, input: UpdateAddressInput): Promise<Address> => {
-  try {
-    // If setting as default, unset other default addresses first
-    if (input.is_default) {
-      await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', userId);
-    }
+  const [created] = await db
+    .insert(addresses)
+    .values({
+      userId: sessionId,
+      fullName: input.full_name,
+      email: input.email,
+      phone: input.phone,
+      addressLine: input.address_line,
+      city: input.city,
+      region: input.region,
+      instructions: input.instructions ?? null,
+      isDefault: input.is_default ?? false,
+    })
+    .returning();
 
-    const { data, error } = await supabase
-      .from('addresses')
-      .update(input)
-      .eq('id', addressId)
-      .eq('user_id', userId)
-      .select()
-      .single();
+  return mapAddress(created);
+}
 
-    if (error) throw error;
+// !! Update address (scoped to current user). Clears other defaults if needed.
+export async function updateAddress(
+  addressId: string,
+  userId: string,
+  input: UpdateAddressInput
+): Promise<Address> {
+  const sessionId = await requireUserId(userId);
 
-    return data;
-  } catch (error) {
-    console.error('Error updating address:', error);
-    throw error;
+  if (input.is_default) {
+    await db
+      .update(addresses)
+      .set({ isDefault: false })
+      .where(eq(addresses.userId, sessionId));
   }
-};
 
-//!! Delete address
-export const deleteAddress = async (addressId: string, userId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('addresses')
-      .delete()
-      .eq('id', addressId)
-      .eq('user_id', userId);
+  const patch: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+  if (input.full_name !== undefined) patch.fullName = input.full_name;
+  if (input.email !== undefined) patch.email = input.email;
+  if (input.phone !== undefined) patch.phone = input.phone;
+  if (input.address_line !== undefined) patch.addressLine = input.address_line;
+  if (input.city !== undefined) patch.city = input.city;
+  if (input.region !== undefined) patch.region = input.region;
+  if (input.instructions !== undefined)
+    patch.instructions = input.instructions || null;
+  if (input.is_default !== undefined) patch.isDefault = input.is_default;
 
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error deleting address:', error);
-    throw error;
-  }
-};
+  const [updated] = await db
+    .update(addresses)
+    .set(patch)
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, sessionId)))
+    .returning();
 
-//!! Set default address
-export const setDefaultAddress = async (addressId: string, userId: string): Promise<Address> => {
-  try {
-    // Unset all other default addresses
-    await supabase
-      .from('addresses')
-      .update({ is_default: false })
-      .eq('user_id', userId);
+  if (!updated) throw new Error("Address not found");
+  return mapAddress(updated);
+}
 
-    // Set new default
-    const { data, error } = await supabase
-      .from('addresses')
-      .update({ is_default: true })
-      .eq('id', addressId)
-      .eq('user_id', userId)
-      .select()
-      .single();
+// !! Delete an address (scoped to user)
+export async function deleteAddress(
+  addressId: string,
+  userId: string
+): Promise<void> {
+  const sessionId = await requireUserId(userId);
+  await db
+    .delete(addresses)
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, sessionId)));
+}
 
-    if (error) throw error;
+// !! Mark a single address as the user's default; clears all others
+export async function setDefaultAddress(
+  addressId: string,
+  userId: string
+): Promise<Address> {
+  const sessionId = await requireUserId(userId);
 
-    return data;
-  } catch (error) {
-    console.error('Error setting default address:', error);
-    throw error;
-  }
-};
+  await db
+    .update(addresses)
+    .set({ isDefault: false })
+    .where(eq(addresses.userId, sessionId));
+
+  const [updated] = await db
+    .update(addresses)
+    .set({ isDefault: true, updatedAt: new Date().toISOString() })
+    .where(and(eq(addresses.id, addressId), eq(addresses.userId, sessionId)))
+    .returning();
+
+  if (!updated) throw new Error("Address not found");
+  return mapAddress(updated);
+}

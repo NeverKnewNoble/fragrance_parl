@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, Check, X, Sparkles, Flower2, Leaf, Droplet, Wind, Flame, Heart, Star, Sun, Moon, Coffee, Apple, Cherry, Citrus, TreePine, Waves } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/alert";
-import { fetchAllFragranceFamilies } from "@/utils/fragranceFamilies";
+import {
+  fetchAllFragranceFamilies,
+  createFragranceFamily,
+  updateFragranceFamilyByName,
+  deleteFragranceFamilyByName,
+} from "@/utils/fragranceFamilies";
 import { fragrance_family } from "@/types/family_fragrance";
 import * as LucideIcons from "lucide-react";
 
@@ -55,13 +59,9 @@ const FragranceFamilyManager = () => {
   }, []);
 
   // !! Function to create a new fragrance family
-  const createFragranceFamily = async () => {
+  const handleCreateFamily = async () => {
     try {
-      const { error } = await supabase
-        .from("fragrance_families")
-        .insert([{ name: newFamilyName, icon: newIcon }])
-        .select();
-      if (error) return console.error(error);
+      await createFragranceFamily({ name: newFamilyName, icon: newIcon });
 
       toast.success("Fragrance family created successfully", {
         durationMs: 5000,
@@ -79,16 +79,14 @@ const FragranceFamilyManager = () => {
   };
 
   // !! Edit and change name of fragrance family
-  const editFragranceFamily = async () => {
+  const handleEditFamily = async () => {
     if (!editingFamily) return;
 
     try {
-      const { error } = await supabase
-        .from("fragrance_families")
-        .update({ name: editValue, icon: editIcon })
-        .eq("name", editingFamily);
-
-      if (error) return console.error(error);
+      await updateFragranceFamilyByName(editingFamily, {
+        name: editValue,
+        icon: editIcon,
+      });
 
       toast.success("Saved changes", { durationMs: 5000 });
 
@@ -103,13 +101,9 @@ const FragranceFamilyManager = () => {
   };
 
   // !! Delete fragrance family
-  const deleteFragranceFamily = async (family: string) => {
+  const handleDeleteFamily = async (family: string) => {
     try {
-      const { error } = await supabase
-        .from("fragrance_families")
-        .delete()
-        .eq("name", family);
-      if (error) return console.error(error);
+      await deleteFragranceFamilyByName(family);
 
       toast.success("Fragrance family deleted successfully", {
         durationMs: 5000,
@@ -189,7 +183,7 @@ const FragranceFamilyManager = () => {
                 value={newFamilyName}
                 onChange={(e) => setNewFamilyName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") createFragranceFamily();
+                  if (e.key === "Enter") handleCreateFamily();
                   if (e.key === "Escape") {
                     setIsAdding(false);
                     setNewFamilyName("");
@@ -213,7 +207,7 @@ const FragranceFamilyManager = () => {
                 })()}
               </button>
               <button
-                onClick={createFragranceFamily}
+                onClick={handleCreateFamily}
                 disabled={!newFamilyName.trim()}
                 className="rounded-xl bg-linear-to-r from-[#D4AF37] to-[#e3c55d] cursor-pointer text-white px-4 py-3 font-semibold shadow-lg shadow-[#D4AF37]/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -300,7 +294,7 @@ const FragranceFamilyManager = () => {
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") editFragranceFamily();
+                        if (e.key === "Enter") handleEditFamily();
                         if (e.key === "Escape") handleCancelEdit();
                       }}
                       autoFocus
@@ -331,7 +325,7 @@ const FragranceFamilyManager = () => {
                     
                     <div className="flex gap-2">
                       <button
-                        onClick={editFragranceFamily}
+                        onClick={handleEditFamily}
                         className="flex-1 rounded-lg bg-[#D4AF37] text-white px-3 py-1.5 text-xs font-semibold hover:bg-[#e3c55d] transition-colors"
                       >
                         Save
@@ -365,7 +359,7 @@ const FragranceFamilyManager = () => {
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => deleteFragranceFamily(family.name)}
+                          onClick={() => handleDeleteFamily(family.name)}
                           className="rounded-lg bg-red-50 p-2 text-red-600 hover:bg-red-100 transition-colors"
                           title="Delete"
                         >

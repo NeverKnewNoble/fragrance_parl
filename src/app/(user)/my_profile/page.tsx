@@ -6,7 +6,7 @@ import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Mail, Edit2, Save, X, Camera } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { updateProfileName } from '@/lib/auth';
 
 export default function MyProfilePage() {
   const router = useRouter();
@@ -22,9 +22,9 @@ export default function MyProfilePage() {
   //!! Load user profile data
   useEffect(() => {
     if (user && !loading) {
-      setName(user.user_metadata?.name || user.email?.split('@')[0] || '');
+      setName(user.name || user.email?.split('@')[0] || '');
       setEmail(user.email || '');
-      setAvatarUrl(user.user_metadata?.avatar_url || null);
+      setAvatarUrl(user.image || null);
     }
   }, [user, loading]);
 
@@ -38,17 +38,10 @@ export default function MyProfilePage() {
   //!! Handle save profile
   const handleSave = async () => {
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          name,
-        },
-      });
-
-      if (error) throw error;
-
+      await updateProfileName(name);
       setIsEditing(false);
       // Show success message (you can add a toast notification here)
     } catch (error) {
@@ -62,7 +55,7 @@ export default function MyProfilePage() {
   //!! Handle cancel edit
   const handleCancel = () => {
     if (user) {
-      setName(user.user_metadata?.name || user.email?.split('@')[0] || '');
+      setName(user.name || user.email?.split('@')[0] || '');
     }
     setIsEditing(false);
   };
@@ -70,7 +63,7 @@ export default function MyProfilePage() {
   //!! Get user display name
   const getUserDisplayName = () => {
     if (!user) return 'User';
-    return user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+    return user.name || user.email?.split('@')[0] || 'User';
   };
 
   //!! Show loading state
