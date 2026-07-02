@@ -122,11 +122,6 @@ export async function getServerUser() {
   return session?.user ?? null;
 }
 
-// !! Trigger Google OAuth flow (server action — issues a redirect)
-export async function signInWithGoogle(redirectTo: string = "/") {
-  await nextAuthSignIn("google", { redirectTo });
-}
-
 // !! Update password for the currently signed-in user
 export async function updatePassword(newPassword: string) {
   if (newPassword.length < 8) {

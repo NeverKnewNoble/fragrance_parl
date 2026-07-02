@@ -1,110 +1,98 @@
 'use client';
 
-import { MessageCircle } from 'lucide-react';
-
 const testimonials = [
   {
-    name: "Ama K.",
-    message: "Just received my order!! The scent is amazing, thank you so much! Will definitely order again",
-    time: "2:34 PM",
+    quote:
+      'It arrived wrapped like a gift from another era. I opened it in the dark and remembered why I started wearing perfume.',
+    name: 'Ama K.',
+    location: 'Accra',
+    note: 'Eau de Parfum · 50ml',
   },
   {
-    name: "Kwame D.",
-    message: "Bro this perfume is fire I've gotten so many compliments already. Best purchase ever",
-    time: "11:20 AM",
+    quote:
+      'Bro this perfume is fire. Three compliments before lunch. Worth every cedi.',
+    name: 'Kwame D.',
+    location: 'KNUST',
+    note: 'Travel · 30ml',
   },
   {
-    name: "Efua M.",
-    message: "Got the package today, it smells sooo good! My roommate wants to order too now lol",
-    time: "4:15 PM",
+    quote:
+      'The amber dries down to something my mother used to wear. It feels like a memory I never had.',
+    name: 'Efua M.',
+    location: 'Tema',
+    note: 'Extrait · 75ml',
   },
   {
-    name: "Kofi B.",
-    message: "The delivery was fast and the fragrance lasts all day. You guys are the best!",
-    time: "9:45 AM",
-  },
-  {
-    name: "Abena S.",
-    message: "Thank you! I bought this for my boyfriend and he loves it. Great quality",
-    time: "6:30 PM",
-  },
-  {
-    name: "Yaw T.",
-    message: "Finally found affordable luxury perfumes on campus. This is a game changer fr",
-    time: "1:12 PM",
+    quote:
+      'Delivered to my door before noon. Lasted till dawn. Already drafting my next order.',
+    name: 'Kofi B.',
+    location: 'East Legon',
+    note: 'Eau de Parfum · 100ml',
   },
 ];
 
+/**
+ *  Testimonials — "From the Counter"
+ *  Rejecting the chat-bubble grid. Each quote is set as a pulled-quote
+ *  card with display italic, attributed beneath. Asymmetric stagger.
+ */
 export function Testimonials() {
   return (
-    <section className="relative w-full bg-white py-16 sm:py-20 lg:py-24 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D4AF37] mb-4">
-            <span className="flex h-1.5 w-7 items-center justify-between">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-              <span className="h-1 w-1 rounded-full bg-[#D4AF37]/60" />
-              <span className="h-1 w-1 rounded-full bg-[#D4AF37]/30" />
-            </span>
-            Testimonials
-          </span>
-          <h2 className="text-3xl font-bold leading-tight tracking-tight text-black sm:text-4xl md:text-5xl mb-4">
-            What Our{' '}
-            <span className="bg-linear-to-r from-[#D4AF37] via-[#f5e3a1] to-[#D4AF37] bg-clip-text text-transparent">
-              Customers
-            </span>{' '}
-            Say
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Real messages from our happy customers
-          </p>
+    <section className="relative w-full bg-ink py-24 sm:py-32 grain">
+      {/* Top hairline */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-1/2 bg-gold/25" />
+
+      <div className="relative z-10 mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14">
+        <div className="flex items-end justify-between gap-8 mb-16 sm:mb-24">
+          <div>
+            <p className="label-spec text-gold mb-6">
+              <span className="tick bg-gold/60" />
+              Chapter&nbsp;IV&nbsp;·&nbsp;Letters&nbsp;Received
+            </p>
+            <h2 className="font-display text-vellum leading-[0.95] tracking-tight">
+              <span className="block text-[clamp(2.5rem,7vw,6rem)]">From the</span>
+              <span className="block font-display-italic text-[clamp(2.5rem,7vw,6rem)] text-gold -mt-1">
+                counter.
+              </span>
+            </h2>
+          </div>
         </div>
 
-        {/* Messages Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="group relative"
+        {/* Quote spread — staggered */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-20 lg:gap-y-28">
+          {testimonials.map((t, i) => (
+            <figure
+              key={i}
+              className={`relative ${i % 2 === 1 ? 'md:translate-y-20' : ''}`}
             >
-              {/* Message Bubble */}
-              <div className="relative rounded-2xl rounded-tl-sm bg-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow duration-300">
-                {/* Message Icon */}
-                <div className="absolute -top-3 -left-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#D4AF37] shadow-lg">
-                  <MessageCircle className="h-4 w-4 text-white" />
-                </div>
+              {/* Decorative serif quote mark */}
+              <span
+                aria-hidden
+                className="absolute -top-12 -left-2 font-display-italic text-gold/60 text-[6rem] leading-none select-none"
+              >
+                "
+              </span>
 
-                {/* Sender Name */}
-                <div className="mb-3 pt-1">
-                  <span className="font-bold text-gray-900">{testimonial.name}</span>
-                </div>
-
-                {/* Message Content */}
-                <p className="text-gray-700 text-sm leading-relaxed mb-3">
-                  {testimonial.message}
+              <blockquote className="relative pl-6 pr-2">
+                <p className="font-display-italic text-vellum text-[clamp(1.25rem,2.5vw,2rem)] leading-[1.3]">
+                  {t.quote}
                 </p>
+              </blockquote>
 
-                {/* Time & Read Receipt */}
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-xs text-gray-400">{testimonial.time}</span>
-                  {/* Double check mark */}
-                  <svg className="h-4 w-4 text-[#D4AF37]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M2 12l5 5L18 6" />
-                    <path d="M7 12l5 5L23 6" />
-                  </svg>
+              <figcaption className="mt-8 pl-6 flex items-baseline gap-4">
+                <span className="h-px w-10 bg-gold" />
+                <div>
+                  <p className="font-mono-spec text-xs text-gold">
+                    {t.name}
+                  </p>
+                  <p className="label-spec text-shadow mt-1">
+                    {t.location}&nbsp;·&nbsp;{t.note}
+                  </p>
                 </div>
-
-                {/* Bubble Tail */}
-                <div className="absolute top-4 -left-2 w-0 h-0 border-t-8 border-t-transparent border-r-12 border-r-gray-100 border-b-8 border-b-transparent" />
-              </div>
-            </div>
+              </figcaption>
+            </figure>
           ))}
         </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-[#D4AF37]/5 rounded-full blur-2xl" />
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-[#D4AF37]/5 rounded-full blur-3xl" />
       </div>
     </section>
   );

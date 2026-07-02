@@ -1,121 +1,141 @@
 'use client';
 
-import { Clock, MapPin, Phone, Mail, Truck } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
 
+/**
+ *  AboutUs — "The Bench"
+ *  An editorial about-section. A pulled quote on the left,
+ *  a typeset specimen card on the right showing hours, locations,
+ *  and contact, in the manner of a museum docent label.
+ */
 export function AboutUs() {
   return (
-    <section className="relative w-full bg-white py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#D4AF37] mb-4">
-            <span className="flex h-1.5 w-7 items-center justify-between">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-              <span className="h-1 w-1 rounded-full bg-[#D4AF37]/60" />
-              <span className="h-1 w-1 rounded-full bg-[#D4AF37]/30" />
-            </span>
-            About Us
-          </span>
-          <h2 className="text-3xl font-bold leading-tight tracking-tight text-black sm:text-4xl md:text-5xl">
-            Your Fragrance{' '}
-            <span className="bg-linear-to-r from-[#D4AF37] via-[#f5e3a1] to-[#D4AF37] bg-clip-text text-transparent">
-              Destination
-            </span>
-          </h2>
-        </div>
+    <section className="relative w-full bg-ink py-24 sm:py-32 grain">
+      {/* Top hairline */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-1/2 bg-gold/25" />
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Order Anytime Card */}
-          <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-shadow duration-300">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D4AF37]/10">
-                <Clock className="h-7 w-7 text-[#D4AF37]" />
-              </div>
-              <h3 className="text-xl font-bold text-black">Order Anytime</h3>
-            </div>
-            <p className="text-3xl font-extrabold text-[#D4AF37] mb-2">24/7</p>
-            <p className="text-gray-600">
-              Place your orders any day, any time. We&apos;re always ready to serve you!
+      <div className="relative z-10 mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20">
+          {/* LEFT — pull quote */}
+          <div className="lg:col-span-7">
+            <p className="label-spec text-gold mb-10">
+              <span className="tick bg-gold/60" />
+              Chapter&nbsp;III&nbsp;·&nbsp;The&nbsp;House
             </p>
-          </div>
 
-          {/* Delivery Days Card */}
-          <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-shadow duration-300">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D4AF37]/10">
-                <Truck className="h-7 w-7 text-[#D4AF37]" />
-              </div>
-              <h3 className="text-xl font-bold text-black">Delivery Days</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="font-semibold text-gray-900">Monday</span>
-                <span className="text-gray-600">9AM – 6PM</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="font-semibold text-gray-900">Thursday</span>
-                <span className="text-gray-600">9AM – 8PM</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="font-semibold text-gray-900">Saturday</span>
-                <span className="text-gray-600">9AM – 6PM</span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="font-semibold text-gray-900">Sunday</span>
-                <span className="text-red-500 font-medium">Closed</span>
-              </div>
+            <blockquote className="font-display text-vellum leading-[1.05] tracking-[-0.01em]">
+              <span className="block text-[clamp(2rem,5.5vw,4.75rem)]">
+                We don't sell{' '}
+                <span className="font-display-italic text-gold">perfume.</span>
+              </span>
+              <span className="block text-[clamp(2rem,5.5vw,4.75rem)] mt-1">
+                We compose nights you'll
+              </span>
+              <span className="block text-[clamp(2rem,5.5vw,4.75rem)] mt-1">
+                remember by their{' '}
+                <span className="font-display-italic text-gold">scent.</span>
+              </span>
+            </blockquote>
+
+            <div className="mt-12 max-w-md">
+              <p className="text-bone text-[15px] leading-[1.7]">
+                Fragrance Parl is a small house operating from Accra, working
+                with raw materials sourced personally from Grasse, Mysore, and
+                the souks of the Levant. Every edition is bottled in limited
+                runs, hand-numbered, and shipped within the week.
+              </p>
             </div>
           </div>
 
-          {/* Location & Contact Card */}
-          <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-shadow duration-300 md:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D4AF37]/10">
-                <MapPin className="h-7 w-7 text-[#D4AF37]" />
-              </div>
-              <h3 className="text-xl font-bold text-black">Find Us</h3>
-            </div>
+          {/* RIGHT — specimen card with details */}
+          <aside className="lg:col-span-5">
+            <div className="relative border border-gold/25 bg-smoke/40 p-8 sm:p-10">
+              <span className="absolute -top-3 left-8 bg-ink px-3 label-spec text-gold">
+                Specimen&nbsp;·&nbsp;The&nbsp;Counter
+              </span>
 
-            <div className="space-y-4">
+              {/* Hours table */}
+              <p className="label-spec text-shadow mb-4">Hours</p>
+              <table className="w-full mb-10">
+                <tbody>
+                  {[
+                    ['Monday', '9—18'],
+                    ['Tuesday', '— ', true],
+                    ['Wednesday', '— ', true],
+                    ['Thursday', '9—20'],
+                    ['Friday', '— ', true],
+                    ['Saturday', '9—18'],
+                    ['Sunday', '— ', true],
+                  ].map(([day, hours, closed]) => (
+                    <tr
+                      key={day as string}
+                      className="border-b border-gold/10 last:border-0"
+                    >
+                      <td className="py-2.5 font-display-italic text-vellum text-base">
+                        {day}
+                      </td>
+                      <td
+                        className={`py-2.5 text-right font-mono-spec text-xs ${
+                          closed ? 'text-shadow/60' : 'text-gold'
+                        }`}
+                      >
+                        {closed ? 'Closed' : hours}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
               {/* Locations */}
-              <div className="rounded-xl bg-[#D4AF37]/5 p-4 border border-[#D4AF37]/20">
-                <p className="font-semibold text-gray-900 mb-1">Our Locations</p>
-                <p className="text-gray-600">UPSA Campus & KNUST Campus</p>
-                <p className="text-sm text-[#D4AF37] font-medium mt-2">
-                  Free delivery to these locations!
-                </p>
-              </div>
+              <p className="label-spec text-shadow mb-4">Counters</p>
+              <ul className="mb-10 space-y-3">
+                <li className="flex items-baseline justify-between gap-4 border-b border-gold/10 pb-3">
+                  <span className="font-display-italic text-vellum text-base">
+                    UPSA Campus
+                  </span>
+                  <span className="font-mono-spec text-[10px] text-gold">
+                    Free&nbsp;delivery
+                  </span>
+                </li>
+                <li className="flex items-baseline justify-between gap-4">
+                  <span className="font-display-italic text-vellum text-base">
+                    KNUST Campus
+                  </span>
+                  <span className="font-mono-spec text-[10px] text-gold">
+                    Free&nbsp;delivery
+                  </span>
+                </li>
+              </ul>
 
-              {/* Contact Info */}
-              <div className="space-y-3">
+              {/* Contact */}
+              <p className="label-spec text-shadow mb-4">Correspondence</p>
+              <div className="flex flex-col gap-3">
                 <a
                   href="tel:+233550798770"
-                  className="flex items-center gap-3 text-gray-600 hover:text-[#D4AF37] transition-colors"
+                  className="group flex items-center gap-3 text-bone hover:text-gold transition-colors duration-300"
                 >
-                  <Phone className="h-5 w-5" />
-                  <span>+233 550 798 770</span>
+                  <Phone className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  <span className="font-mono-spec text-xs">
+                    +233&nbsp;550&nbsp;798&nbsp;770
+                  </span>
                 </a>
                 <a
                   href="mailto:urfragranceparl@gmail.com"
-                  className="flex items-center gap-3 text-gray-600 hover:text-[#D4AF37] transition-colors"
+                  className="group flex items-center gap-3 text-bone hover:text-gold transition-colors duration-300"
                 >
-                  <Mail className="h-5 w-5" />
-                  <span>urfragranceparl@gmail.com</span>
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  <span className="font-mono-spec text-xs">
+                    urfragranceparl@gmail.com
+                  </span>
                 </a>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <a
-            href="/category"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-[#D4AF37] via-[#f3de9e] to-[#D4AF37] px-8 py-4 text-sm font-semibold text-black shadow-[0_22px_60px_rgba(212,175,55,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(212,175,55,0.45)]"
-          >
-            Order Now
-          </a>
+            {/* Beneath the card — small footnote */}
+            <p className="mt-6 label-spec text-shadow text-right">
+              Composed&nbsp;weekly&nbsp;·&nbsp;Bottled&nbsp;by&nbsp;hand
+            </p>
+          </aside>
         </div>
       </div>
     </section>

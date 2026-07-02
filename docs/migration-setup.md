@@ -49,23 +49,9 @@ DATABASE_URL="postgresql://...sslmode=require"
 AUTH_SECRET="<openssl rand -base64 32>"
 NEXTAUTH_URL="http://localhost:3000"
 AUTH_URL="http://localhost:3000"
-AUTH_GOOGLE_ID="<from Google Cloud Console>"
-AUTH_GOOGLE_SECRET="<from Google Cloud Console>"
 ```
 
-## 4. Configure Google OAuth
-
-Auth.js v5 uses a different callback path than Supabase did. In the Google Cloud Console:
-
-1. Open <https://console.cloud.google.com/apis/credentials>.
-2. Edit your OAuth 2.0 Client.
-3. Set the **Authorized redirect URI** to:
-   - Local: `http://localhost:3000/api/auth/callback/google`
-   - Prod:  `https://YOUR_DOMAIN/api/auth/callback/google`
-
-The previous URI (`/auth/callback`) is no longer used and should be removed.
-
-## 5. Seed an admin user (optional)
+## 4. Seed an admin user (optional)
 
 After signing up through the app, mark yourself as admin:
 

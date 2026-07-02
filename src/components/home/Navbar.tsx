@@ -2,17 +2,25 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, ShoppingCart, ChevronDown, User, LogOut, Heart } from 'lucide-react';
+import { Menu, X, ShoppingBag, ChevronDown, User, LogOut, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut, isCurrentUserAdmin } from '@/lib/auth';
 import { getCartItemCount } from '@/utils/cartUtils';
-import { CartItem } from '@/types/cart';
 
+/**
+ *  Navbar — "Maison de Nuit"
+ *  An editorial header that reads as a press masthead. No pill, no sparkle.
+ *  - Brand sits on the left in display serif (italic), lowered into the page.
+ *  - The middle nav uses tiny mono labels with hairline separators.
+ *  - Cart, favorites, account icons collapse into a slim right cluster.
+ *  - On scroll the bar contracts, gold rule beneath darkens.
+ */
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useAuth();
 
@@ -27,13 +35,11 @@ export function Navbar() {
       try {
         const count = await getCartItemCount(user.id);
         setCartCount(count);
-      } catch (error) {
-        console.error('Error getting cart count:', error);
+      } catch {
         setCartCount(0);
       }
     };
 
-    // Check if user is admin
     const checkAdminRole = async () => {
       try {
         const adminFlag = await isCurrentUserAdmin();
@@ -47,286 +53,328 @@ export function Navbar() {
     checkAdminRole();
 
     const handleCartUpdated = () => updateCartCount();
-
     window.addEventListener('cart_updated', handleCartUpdated);
-
-    return () => {
-      window.removeEventListener('cart_updated', handleCartUpdated);
-    };
+    return () => window.removeEventListener('cart_updated', handleCartUpdated);
   }, [user, loading]);
 
+  // Track scroll position to contract the bar
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 14);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  //!! Close dropdown when clicking outside
+  // Close user dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     }
-
-    if (isUserMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isUserMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isUserMenuOpen]);
 
-
-  //!! Get user display name
   const getUserName = () => {
     if (!user) return '';
     return user.name || user.email?.split('@')[0] || 'User';
   };
 
-  //!! Handle logout
   const handleLogout = async () => {
     await signOut();
     setIsUserMenuOpen(false);
     window.location.href = '/';
   };
 
-
-
-  
-  //!! Return the navbar
   return (
-    <header className="fixed top-6 left-0 right-0 z-50 flex w-full justify-center pointer-events-none px-3 sm:px-4">
-      {/* Pill-shaped navbar container */}
-      <nav className="flex w-full max-w-200 items-center justify-between gap-3 rounded-full border border-white/20 bg-black/60 backdrop-blur-xl px-4 sm:px-5 py-2.5  mx-auto pointer-events-auto">
-        {/* Brand */}
-        <Link
-          href="/"
-          className="group flex items-center rounded-full px-2 sm:px-3 py-1.5 transition-transform duration-200 hover:scale-[1.02] cursor-pointer"
-        >
-          <span className="text-xs sm:text-sm font-semibold tracking-[0.24em] text-white transition-colors duration-200 group-hover:text-[#D4AF37] uppercase">
-            Fragrance Parl
-          </span>
-        </Link>
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ease-out ${
+          scrolled
+            ? 'bg-ink/85 backdrop-blur-xl border-b border-gold/20'
+            : 'bg-transparent border-b border-transparent'
+        }`}
+      >
+        <div className="mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14">
+          <nav
+            className={`relative flex items-center justify-between transition-all duration-500 ease-out ${
+              scrolled ? 'h-14' : 'h-20'
+            }`}
+          >
+            {/* Brand */}
+            <Link
+              href="/"
+              className="group flex items-baseline gap-3 select-none"
+              aria-label="Fragrance Parl — Home"
+            >
+              <span
+                className="font-display-italic text-[26px] sm:text-[30px] leading-none text-vellum transition-colors duration-300 group-hover:text-gold"
+              >
+                Fragrance&nbsp;Parl
+              </span>
+              <span className="hidden md:inline label-spec text-shadow group-hover:text-gold/80 transition-colors duration-300">
+                Maison&nbsp;·&nbsp;Accra
+              </span>
+            </Link>
 
-        {/* Center nav links (desktop) */}
-        <div className="hidden items-center gap-7 text-[11px] font-bold text-white/70 md:flex">
-          <Link
-            href="/"
-            className="relative pb-0.5 transition-colors duration-200 hover:text-[#D4AF37] cursor-pointer"
-          >
-            HOME
-            <span className="pointer-events-none absolute inset-x-0 -bottom-1 h-px origin-left scale-x-0 bg-[#D4AF37] transition-transform duration-200 hover:scale-x-100" />
-          </Link>
-          <Link
-            href="/category"
-            className="relative pb-0.5 transition-colors duration-200 hover:text-[#D4AF37] cursor-pointer"
-          >
-            CATEGORY
-          </Link>
-          <Link
-            href="/my_orders"
-            className="relative pb-0.5 transition-colors duration-200 hover:text-[#D4AF37] cursor-pointer"
-          >
-            MY ORDERS
-          </Link>
-        </div>
+            {/* Desktop center nav — three editorial categories */}
+            <div className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
+              <NavLink href="/" label="Maison" />
+              <NavLink href="/category" label="The&nbsp;Library" />
+              <NavLink href="/my_orders" label="Dossier" />
+            </div>
 
-        {/* Auth buttons + mobile menu toggle */}
-        <div className="flex items-center gap-2">
-          {/* Desktop: Show cart + user menu when logged in, or login/signup when not */}
-          {!loading && (
-            <div className="hidden items-center gap-3 sm:flex">
-              {user ? (
+            {/* Right cluster */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {!loading && user && (
                 <>
-                  {/* Cart icon */}
+                  {/* Favorites */}
+                  <Link
+                    href="/favorites"
+                    aria-label="Favorites"
+                    className="hidden sm:inline-flex h-10 w-10 items-center justify-center text-bone transition-colors duration-300 hover:text-gold"
+                  >
+                    <Heart className="h-[18px] w-[18px]" strokeWidth={1.4} />
+                  </Link>
+
+                  {/* Bag */}
                   <Link
                     href="/cart"
-                    className="group relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0] hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                    aria-label="Bag"
+                    className="relative inline-flex h-10 w-10 items-center justify-center text-bone transition-colors duration-300 hover:text-gold"
                   >
-                    <ShoppingCart className="h-4 w-4" />
-                    {cartCount >= 1 && (
-                      <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold leading-none text-black shadow-[0_10px_26px_rgba(0,0,0,0.35)]">
+                    <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.4} />
+                    {cartCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 font-mono-spec text-[9px] leading-none text-gold">
                         {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     )}
                   </Link>
 
-                  {/* User dropdown menu */}
-                  <div className="relative" ref={userMenuRef}>
+                  {/* User menu */}
+                  <div className="relative hidden sm:block" ref={userMenuRef}>
                     <button
                       type="button"
-                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0] hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                      onClick={() => setIsUserMenuOpen((s) => !s)}
+                      className="group inline-flex items-center gap-2 px-3 py-2 label-spec text-bone transition-colors duration-300 hover:text-gold"
                     >
-                      <span className="max-w-25 truncate">{getUserName()}</span>
+                      <span className="max-w-[8rem] truncate normal-case tracking-[0.18em]">
+                        {getUserName()}
+                      </span>
                       <ChevronDown
-                        className={`h-3 w-3 transition-transform duration-200 ${
+                        className={`h-3 w-3 transition-transform duration-300 ${
                           isUserMenuOpen ? 'rotate-180' : ''
                         }`}
+                        strokeWidth={1.6}
                       />
                     </button>
 
-                    {/* Dropdown menu */}
+                    {/* Dropdown */}
                     {isUserMenuOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-white/15 bg-black/95 backdrop-blur-xl px-2 py-2 shadow-[0_22px_60px_rgba(0,0,0,0.9)]">
-                        <Link
-                          href="/my_profile"
-                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-[#D4AF37] cursor-pointer"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <User className="h-4 w-4" />
-                          My Profile
-                        </Link>
-                        {isAdmin && (
-                          <Link
-                            href="/dashboard"
-                            className="flex items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-[#D4AF37] cursor-pointer"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            <Menu className="h-4 w-4" />
-                            Dashboard
-                          </Link>
-                        )}
-                        <Link
-                          href="/favorites"
-                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-[#D4AF37] cursor-pointer"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <Heart className="h-4 w-4" />
-                          Favorites
-                        </Link>
+                      <div className="absolute right-0 top-full mt-3 w-56 border border-gold/25 bg-ink/95 backdrop-blur-xl shadow-[0_30px_60px_rgba(0,0,0,0.7)]">
+                        <div className="px-4 pt-4 pb-3 border-b border-gold/15">
+                          <p className="label-spec text-shadow">Account</p>
+                          <p className="mt-1 font-display-italic text-vellum text-lg leading-tight truncate">
+                            {getUserName()}
+                          </p>
+                        </div>
+                        <div className="py-2">
+                          <DropLink href="/my_profile" icon={User} label="Profile" onClick={() => setIsUserMenuOpen(false)} />
+                          {isAdmin && (
+                            <DropLink href="/dashboard" icon={Menu} label="Dashboard" onClick={() => setIsUserMenuOpen(false)} />
+                          )}
+                          <DropLink href="/favorites" icon={Heart} label="Favorites" onClick={() => setIsUserMenuOpen(false)} />
+                        </div>
                         <button
                           type="button"
                           onClick={handleLogout}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-red-400 cursor-pointer"
+                          className="flex w-full items-center gap-3 px-4 py-3 border-t border-gold/15 label-spec text-bone transition-colors duration-300 hover:text-ember"
                         >
-                          <LogOut className="h-4 w-4" />
-                          Logout
+                          <LogOut className="h-4 w-4" strokeWidth={1.4} />
+                          Sign&nbsp;Out
                         </button>
                       </div>
                     )}
                   </div>
                 </>
-              ) : (
-                <>
+              )}
+
+              {!loading && !user && (
+                <div className="hidden sm:flex items-center gap-1">
                   <Link
                     href="/login"
-                    className="rounded-full border border-white/16 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0] hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                    className="px-3 py-2 label-spec text-bone transition-colors duration-300 hover:text-gold"
                   >
-                    Login
+                    Sign&nbsp;In
                   </Link>
+                  <span className="text-shadow/40">/</span>
                   <Link
                     href="/signup"
-                    className="inline-flex items-center gap-1 rounded-full bg-[#D4AF37] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_16px_40px_rgba(212,175,55,0.55)] transition-all duration-200 hover:bg-[#e3c55d] hover:-translate-y-px active:translate-y-0 cursor-pointer"
+                    className="px-3 py-2 label-spec text-gold transition-colors duration-300 hover:text-vellum"
                   >
-                    Signup
+                    Register
                   </Link>
-                </>
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Mobile menu toggle */}
-          <button
-            type="button"
-            aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
-            onClick={() => setIsOpen((prev) => !prev)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/85 shadow-[0_10px_26px_rgba(0,0,0,0.5)] transition-all duration-200 hover:border-[#D4AF37]/70 hover:text-[#f6e6b0] md:hidden cursor-pointer"
-          >
-            {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
+              {/* Mobile toggle */}
+              <button
+                type="button"
+                aria-label={isOpen ? 'Close menu' : 'Open menu'}
+                onClick={() => setIsOpen((p) => !p)}
+                className="md:hidden inline-flex h-10 w-10 items-center justify-center text-bone hover:text-gold transition-colors duration-300"
+              >
+                {isOpen ? <X className="h-5 w-5" strokeWidth={1.5} /> : <Menu className="h-5 w-5" strokeWidth={1.5} />}
+              </button>
+            </div>
+          </nav>
         </div>
-      </nav>
 
-      {/* Mobile dropdown menu */}
+        {/* Hairline gold rule beneath nav (visible on scroll) */}
+        <div
+          className={`h-px w-full transition-opacity duration-500 ${
+            scrolled ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ background: 'linear-gradient(to right, transparent, var(--gold) 20%, var(--gold) 80%, transparent)' }}
+        />
+      </header>
+
+      {/* Mobile drawer */}
       {isOpen && (
-        <div className="absolute top-18 left-0 right-0 z-40 px-3 sm:px-4 md:hidden pointer-events-none">
-          <div className="mx-auto w-full max-w-200 rounded-3xl border border-white/15 bg-black/85 px-4 py-4 shadow-[0_22px_60px_rgba(0,0,0,0.9)] backdrop-blur-xl pointer-events-auto">
-            <div className="flex flex-col gap-3 text-sm text-white/85">
-              <Link
-                href="/"
-                className="rounded-2xl px-3 py-2 font-semibold tracking-[0.18em] uppercase hover:bg-white/5 hover:text-[#D4AF37] transition-colors cursor-pointer"
-                onClick={() => setIsOpen(false)}
-              >
-                Home
-              </Link>
-              {isAdmin && (
-                <Link
-                  href="/dashboard"
-                  className="rounded-2xl px-3 py-2 font-semibold tracking-[0.18em] uppercase hover:bg-white/5 hover:text-[#D4AF37] transition-colors cursor-pointer"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-              )}
-              <Link
-                href="/category"
-                className="rounded-2xl px-3 py-2 font-semibold tracking-[0.18em] uppercase hover:bg-white/5 hover:text-[#D4AF37] transition-colors cursor-pointer"
-                onClick={() => setIsOpen(false)}
-              >
-                Category
-              </Link>
-              <Link
-                href="/my_orders"
-                className="rounded-2xl px-3 py-2 font-semibold tracking-[0.18em] uppercase hover:bg-white/5 hover:text-[#D4AF37] transition-colors cursor-pointer"
-                onClick={() => setIsOpen(false)}
-              >
-                My Orders
-              </Link>
-            </div>
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-ink/80 backdrop-blur-xl"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="relative h-full flex flex-col">
+            <div className="h-20" />
+            <div className="flex-1 overflow-y-auto px-8 pb-12">
+              <p className="label-spec text-gold mb-10">Index</p>
+              <nav className="flex flex-col gap-7">
+                <MobileLink href="/" label="Maison" onClick={() => setIsOpen(false)} index="I" />
+                <MobileLink href="/category" label="The Library" onClick={() => setIsOpen(false)} index="II" />
+                <MobileLink href="/my_orders" label="Dossier" onClick={() => setIsOpen(false)} index="III" />
+                <MobileLink href="/favorites" label="Favorites" onClick={() => setIsOpen(false)} index="IV" />
+                <MobileLink href="/cart" label="Bag" onClick={() => setIsOpen(false)} index="V" badge={cartCount > 0 ? cartCount : undefined} />
+                {isAdmin && <MobileLink href="/dashboard" label="Dashboard" onClick={() => setIsOpen(false)} index="VI" />}
+              </nav>
 
-            {/* Mobile auth section */}
-            {!loading && (
-              <div className="mt-4">
-                {user ? (
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href="/cart"
-                      className="flex items-center gap-2 rounded-2xl border border-white/25 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/85 transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0]"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      <span className="flex-1">Cart</span>
-                      {cartCount >= 1 && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold leading-none text-black">
-                          {cartCount > 99 ? '99+' : cartCount}
-                        </span>
-                      )}
-                    </Link>
-                    <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/25 bg-white/5 px-3 py-2">
-                      <span className="text-[11px] font-semibold text-white/85 truncate">
+              <div className="mt-16 pt-8 border-t border-gold/20">
+                {!loading && user ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="label-spec text-shadow">Signed in as</p>
+                      <p className="font-display-italic text-2xl text-vellum mt-1">
                         {getUserName()}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="rounded-xl px-3 py-1.5 text-[11px] font-semibold text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-red-400"
-                      >
-                        <LogOut className="h-4 w-4" />
-                      </button>
+                      </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="label-spec text-ember hover:text-vellum transition-colors"
+                    >
+                      Sign&nbsp;Out
+                    </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-6">
                     <Link
                       href="/login"
-                      className="flex-1 rounded-full border border-white/25 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/85 transition-all duration-200 hover:border-[#D4AF37]/70 hover:bg-white/10 hover:text-[#f6e6b0]"
                       onClick={() => setIsOpen(false)}
+                      className="label-spec text-bone hover:text-gold transition-colors"
                     >
-                      Login
+                      Sign&nbsp;In
                     </Link>
+                    <span className="text-shadow/30">·</span>
                     <Link
                       href="/signup"
-                      className="flex-1 inline-flex items-center justify-center rounded-full bg-[#D4AF37] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white shadow-[0_16px_40px_rgba(212,175,55,0.55)] transition-all duration-200 hover:bg-[#e3c55d]"
                       onClick={() => setIsOpen(false)}
+                      className="label-spec text-gold hover:text-vellum transition-colors"
                     >
-                      Signup
+                      Register
                     </Link>
                   </div>
                 )}
               </div>
-            )}
+
+              <p className="label-spec text-shadow mt-16">Est. MMXXIV — Accra</p>
+            </div>
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
 
+/* ─── Internal sub-components ──────────────────────────────── */
+
+function NavLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="group relative label-spec text-bone transition-colors duration-300 hover:text-gold"
+    >
+      <span dangerouslySetInnerHTML={{ __html: label }} />
+      <span
+        aria-hidden
+        className="absolute -bottom-2 left-0 right-0 h-px origin-center scale-x-0 bg-gold transition-transform duration-500 group-hover:scale-x-100"
+      />
+    </Link>
+  );
+}
+
+function DropLink({
+  href,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-3 label-spec text-bone transition-colors duration-300 hover:text-gold hover:bg-smoke/40"
+    >
+      <Icon className="h-4 w-4" strokeWidth={1.4} />
+      {label}
+    </Link>
+  );
+}
+
+function MobileLink({
+  href,
+  label,
+  index,
+  onClick,
+  badge,
+}: {
+  href: string;
+  label: string;
+  index: string;
+  onClick: () => void;
+  badge?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="group flex items-baseline justify-between gap-6 border-b border-gold/10 pb-3"
+    >
+      <span className="flex items-baseline gap-5">
+        <span className="font-mono-spec text-[10px] text-gold/60">{index}</span>
+        <span className="font-display text-[2.5rem] leading-[1.1] text-vellum group-hover:text-gold transition-colors duration-300">
+          {label}
+        </span>
+      </span>
+      {badge !== undefined && (
+        <span className="font-mono-spec text-xs text-gold">{badge > 99 ? '99+' : badge}</span>
+      )}
+    </Link>
+  );
+}

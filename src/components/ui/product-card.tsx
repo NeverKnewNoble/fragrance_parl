@@ -1,17 +1,16 @@
 'use client';
- 
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { loadFavorites, toggleFavorite, isFavorite } from '@/utils/favorites';
- 
-// Simple className utility function
+import { toggleFavorite, isFavorite } from '@/utils/favorites';
+
 function cnUtil(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
- 
+
 export interface ProductCardProps {
   title: string;
   price?: number;
@@ -26,8 +25,21 @@ export interface ProductCardProps {
   onAddToCart?: () => void;
   className?: string;
   productId?: string;
+  /**
+   * Editorial index shown top-left ("I.", "II.", "Nº 03"). Optional.
+   */
+  index?: string;
 }
- 
+
+/**
+ *  ProductCard — Specimen plate
+ *  A perfume-bottle specimen plate. Tall portrait. Matte ink frame.
+ *  - Index numeral upper-left.
+ *  - Image plate centered, with soft amber wash behind it.
+ *  - Title in display italic, volume sizes as small-caps mono spec.
+ *  - "Add" is an underlined editorial link, not a pill.
+ *  - Heart sits unobtrusively in the upper-right; gold when filled.
+ */
 export function ProductCard({
   title,
   price,
@@ -37,13 +49,13 @@ export function ProductCard({
   onAddToCart,
   className,
   productId,
+  index,
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isInFavorites, setIsInFavorites] = useState(false);
   const { user } = useAuth();
 
-  //!! Check if product is in favorites on mount and when user changes
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       const userId = user?.id;
@@ -52,179 +64,185 @@ export function ProductCard({
         setIsInFavorites(favoriteStatus);
       }
     };
-    
     checkFavoriteStatus();
   }, [user, productId]);
 
-  // Get initial price from product_variants or fallback to price prop
   const initialPrice = product_variants?.[0]?.price || price || 0;
-
-  // Format price as Ghanaian Cedi (only currency)
   const formattedPrice = `₵${initialPrice.toLocaleString('en-US')}`;
 
-  // Compute product-level stock status from variants
-  const allVariantsOutOfStock = product_variants?.length
-    ? product_variants.every(v => v.is_out_of_stock)
-    : false;
-  const anyVariantRestocked = product_variants?.some(v => v.is_restocked) ?? false;
-  const isAddToCartDisabled = allVariantsOutOfStock;
+  // Distinct ml sizes (sorted ascending) for spec line
+  const sizes = Array.from(
+    new Set((product_variants ?? []).map((v) => v.size_ml).filter(Boolean))
+  ).sort((a, b) => a - b);
 
-  // Handle add to cart click
+  const allOut = product_variants?.length
+    ? product_variants.every((v) => v.is_out_of_stock)
+    : false;
+  const anyRestocked = product_variants?.some((v) => v.is_restocked) ?? false;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onAddToCart) {
-      onAddToCart();
-    }
+    if (onAddToCart && !allOut) onAddToCart();
   };
 
-  // Handle favorite toggle
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const userId = user?.id;
     if (!userId || !productId) return;
-    
-    const newFavoriteStatus = await toggleFavorite(userId, productId);
-    setIsInFavorites(newFavoriteStatus);
+    const newFav = await toggleFavorite(userId, productId);
+    setIsInFavorites(newFav);
   };
 
-  // Generate product ID from title if not provided
   const id = productId || title.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div
+    <article
       className={cnUtil(
-        'group relative flex flex-col rounded-4xl bg-linear-to-br from-gray-100 to-gray-50',
-        'shadow-[0_8px_32px_rgba(0,0,0,0.08)]',
-        'transition-all duration-500 ease-out',
-        'hover:shadow-[0_12px_48px_rgba(0,0,0,0.12)]',
-        'hover:-translate-y-1',
+        'group relative flex flex-col bg-smoke/60 border border-gold/15 transition-all duration-500 ease-out',
+        'hover:border-gold/40',
         'overflow-hidden',
-        'border border-gray-200/50',
-        'w-full max-w-md',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Product Image Container - Fills entire card */}
-      <div className="relative w-full min-h-87.5 sm:min-h-100 md:min-h-125 overflow-hidden flex flex-col">
-        {/* Stock Status Badges - Top Left */}
-        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-          {allVariantsOutOfStock && (
-            <span className="inline-flex items-center rounded-full bg-red-500/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur-sm">
-              Out of Stock
-            </span>
-          )}
-          {anyVariantRestocked && !allVariantsOutOfStock && (
-            <span className="inline-flex items-center rounded-full bg-[#D4AF37]/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg backdrop-blur-sm">
-              Restocked
-            </span>
-          )}
-        </div>
+      {/* Index numeral, top-left */}
+      {index && (
+        <span className="absolute top-4 left-4 z-20 font-mono-spec text-[10px] text-gold/70 tracking-[0.18em]">
+          {index}
+        </span>
+      )}
 
-        {/* Favorite Button - Top Right */}
+      {/* Stock status badge */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
         <button
           onClick={handleToggleFavorite}
-          className={cnUtil(
-            'absolute top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm shadow-lg transition-all duration-300',
-            isInFavorites
-              ? 'bg-red-500/90 text-white hover:bg-red-600 hover:scale-110'
-              : 'bg-white/90 text-gray-700 hover:bg-white hover:scale-110'
-          )}
           aria-label={isInFavorites ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-        >
-          <Heart className={cnUtil('h-5 w-5', isInFavorites && 'fill-current')} />
-        </button>
-
-        <Link href={`/product/${id}`} className="absolute inset-0 z-0">
-          {image && !imageError ? (
-            <>
-              <Image
-                src={image}
-                alt={imageAlt || title}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className={cnUtil(
-                  'object-cover transition-transform duration-700 ease-out',
-                  isHovered && 'scale-110'
-                )}
-                onError={() => setImageError(true)}
-              />
-              {/* Dark overlay gradient from bottom to middle */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/50 to-transparent pointer-events-none" />
-            </>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-              <div className="text-center">
-                <div className="mx-auto mb-3 h-20 w-20 rounded-full bg-gray-300/50 flex items-center justify-center">
-                  <ShoppingCart className="h-10 w-10 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-400 font-medium">No Image</p>
-              </div>
-            </div>
+          className={cnUtil(
+            'flex h-9 w-9 items-center justify-center transition-colors duration-300',
+            isInFavorites ? 'text-gold' : 'text-bone/70 hover:text-gold'
           )}
-        </Link>
+        >
+          <Heart
+            className={cnUtil('h-4 w-4', isInFavorites && 'fill-current')}
+            strokeWidth={1.4}
+          />
+        </button>
+        {allOut && (
+          <span className="font-mono-spec text-[9px] text-ember tracking-[0.2em] uppercase">
+            Sold&nbsp;Out
+          </span>
+        )}
+        {anyRestocked && !allOut && (
+          <span className="font-mono-spec text-[9px] text-gold tracking-[0.2em] uppercase">
+            Restocked
+          </span>
+        )}
+      </div>
 
-        {/* Product Info Overlay - Positioned at bottom */}
-        <div className="relative mt-auto flex flex-col px-4 sm:px-6 py-4 sm:py-5 z-10">
-          {/* Title - Clickable link */}
-          <Link href={`/product/${id}`}>
-            <h3 className="mb-4 text-xl sm:text-2xl font-bold text-white leading-tight line-clamp-1 hover:text-[#D4AF37] transition-colors duration-200 cursor-pointer">
+      {/* Image plate — portrait aspect */}
+      <Link
+        href={`/product/${id}`}
+        className="relative block aspect-[3/4] w-full bg-ink/50 overflow-hidden"
+      >
+        {/* Soft amber halo behind bottle */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-radial pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 60% 50% at 50% 60%, rgba(212,175,55,0.10), transparent 65%)',
+          }}
+        />
+        {image && !imageError ? (
+          <Image
+            src={image}
+            alt={imageAlt || title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
+            className={cnUtil(
+              'object-cover transition-transform duration-[1200ms] ease-out',
+              'grayscale-[10%] contrast-[1.04]',
+              isHovered && 'scale-[1.04] grayscale-0'
+            )}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="font-display-italic text-bone/40 text-sm">No specimen</p>
+          </div>
+        )}
+
+        {/* Bottom dark wash for legibility of any future hover info */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/70 to-transparent pointer-events-none" />
+
+        {/* Hover micro-caption — slides up */}
+        <div
+          className={cnUtil(
+            'absolute inset-x-4 bottom-4 z-10 flex items-center justify-between transition-all duration-500',
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+          )}
+        >
+          <span className="label-spec text-vellum">View&nbsp;Plate</span>
+          <span className="h-px w-10 bg-gold" />
+        </div>
+      </Link>
+
+      {/* Card body — type only, no images */}
+      <div className="relative flex flex-col gap-4 px-5 py-6 border-t border-gold/15">
+        <div className="flex items-start justify-between gap-4">
+          <Link href={`/product/${id}`} className="min-w-0">
+            <h3 className="font-display text-vellum text-2xl leading-[1.1] tracking-tight transition-colors duration-300 group-hover:text-gold truncate">
               {title}
             </h3>
           </Link>
+          <p className="font-mono-spec text-xs text-gold whitespace-nowrap pt-1">
+            {formattedPrice}
+          </p>
+        </div>
 
-          {/* Price and Add to Cart Button */}
-          <div className="flex items-center justify-between gap-3 sm:gap-4">
-            <p className="text-xl sm:text-2xl font-extrabold text-white">
-              {formattedPrice}
-            </p>
-            <button
-              onClick={handleAddToCart}
-              disabled={isAddToCartDisabled}
-              className={cnUtil(
-                'rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold',
-                'shadow-[0_4px_16px_rgba(0,0,0,0.12)]',
-                'transition-all duration-300 ease-out',
-                'focus:outline-none focus:ring-2 focus:ring-gray-400/50',
-                isAddToCartDisabled
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-white text-gray-900 cursor-pointer hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)] hover:scale-105 active:scale-100'
+        {/* Spec line: sizes available */}
+        {sizes.length > 0 && (
+          <p className="label-spec text-shadow">
+            {sizes.map((s) => `${s}ml`).join(' · ')}
+          </p>
+        )}
+
+        {/* Action row */}
+        <div className="flex items-center justify-between pt-1">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={allOut}
+            aria-label={allOut ? `${title} is sold out` : `Add ${title} to bag`}
+            className={cnUtil(
+              'group/btn relative inline-flex items-center gap-2 label-spec transition-colors duration-300',
+              allOut
+                ? 'text-shadow/50 cursor-not-allowed'
+                : 'text-vellum hover:text-gold cursor-pointer'
+            )}
+          >
+            <span className="relative">
+              {allOut ? 'Sold Out' : 'Add to Bag'}
+              {!allOut && (
+                <span className="absolute -bottom-1 left-0 right-0 h-px bg-gold scale-x-0 origin-left transition-transform duration-500 group-hover/btn:scale-x-100" />
               )}
-              aria-label={isAddToCartDisabled ? `${title} is out of stock` : `Add ${title} to cart`}
-            >
-              {isAddToCartDisabled ? 'Out of Stock' : 'Add to Cart +'}
-            </button>
-          </div>
+            </span>
+            {!allOut && (
+              <span aria-hidden className="font-mono-spec text-gold">+</span>
+            )}
+          </button>
+
+          <Link
+            href={`/product/${id}`}
+            className="label-spec text-shadow hover:text-gold transition-colors duration-300"
+          >
+            Details
+          </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
- 
- 
-/**
- *!! ProductCard Component
- * A modern profile-card style product component with large image,
- * verification badge, statistics, and prominent action button.
- *
- *!! Features:
- * - Large rounded image container
- * - Verification badge
- * - Clean statistics display
- * - Prominent Follow/CTA button
- * - Smooth hover animations
- * - Modern gradient background
- * 
- * !! Usage Example
- * <ProductCard
- *   title="Golden Bloom"
- *   size_ml={75}
- *   price={120}
- *   image="/images/golden_bloom.jpg"
- *   imageAlt="Golden Bloom"
- *   onAddToCart={() => console.log('Added to cart')}
- * />
- */

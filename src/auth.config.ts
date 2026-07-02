@@ -1,5 +1,4 @@
 import type { NextAuthConfig } from "next-auth";
-import Google from "next-auth/providers/google";
 
 // Edge-safe Auth.js config.
 // - No database adapter, no bcrypt — those live in auth.ts (Node runtime only).
@@ -9,13 +8,7 @@ export const authConfig = {
     signIn: "/login",
   },
   session: { strategy: "jwt" },
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+  providers: [],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

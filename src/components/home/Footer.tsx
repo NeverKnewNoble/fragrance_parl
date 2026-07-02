@@ -3,131 +3,116 @@
 import Link from 'next/link';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
 
+/**
+ *  Footer — "The Colophon"
+ *  An editorial masthead. Big italic brand. Hairline-separated columns.
+ *  Footer ends with a press-style stamp: ESTABLISHED MMXXIV — ACCRA.
+ */
 export function Footer() {
   return (
-    <footer className="relative w-full bg-black border-t border-white/10">
-      {/* Decorative gradient overlay */}
-      <div className="absolute inset-0 bg-linear-to-br from-[#D4AF37]/5 via-transparent to-transparent pointer-events-none" />
-      
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
-          {/* Shop Column */}
-          <div className="flex flex-col">
-            <h3 className="mb-3 text-base font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
-              Shop
-            </h3>
-            <nav className="flex flex-col gap-2.5">
-              <Link
-                href="/"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                Home
-              </Link>
-              <Link
-                href="/category"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                Category
-              </Link>
-              <Link
-                href="/my-orders"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                My Orders
-              </Link>
-            </nav>
-          </div>
+    <footer className="relative w-full bg-ink border-t border-gold/15 grain-coarse overflow-hidden">
+      {/* Atmospheric wash */}
+      <div className="absolute -bottom-32 -left-20 h-[40vh] w-[40vw] rounded-full bg-gold/5 blur-[140px] pointer-events-none" />
 
-          {/* Support Column */}
-          <div className="flex flex-col">
-            <h3 className="mb-3 text-base font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
-              Support
-            </h3>
-            <nav className="flex flex-col gap-2.5">
-              <Link
-                href="/my-account"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                My Account
-              </Link>
-              <Link
-                href="/track-order"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                Track Order
-              </Link>
-              <Link
-                href="/contact"
-                className="text-sm text-white/70 transition-all duration-300 hover:text-[#D4AF37] hover:translate-x-1"
-              >
-                Contact Us
-              </Link>
-            </nav>
-          </div>
-
-          {/* Connect Column */}
-          <div className="flex flex-col">
-            <h3 className="mb-3 text-base font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
-              Connect
-            </h3>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Follow us on Instagram"
-                className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/70 transition-all duration-300 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] hover:scale-110"
-              >
-                <Instagram className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Follow us on Facebook"
-                className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/70 transition-all duration-300 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] hover:scale-110"
-              >
-                <Facebook className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Follow us on Twitter"
-                className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/70 transition-all duration-300 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] hover:scale-110"
-              >
-                <Twitter className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-              </a>
-            </div>
-          </div>
+      <div className="relative z-10 mx-auto max-w-[1400px] px-6 sm:px-10 lg:px-14 pt-24 pb-12">
+        {/* Big serif brand stamped at top */}
+        <div className="mb-16 sm:mb-24">
+          <p className="label-spec text-gold mb-6">
+            <span className="tick bg-gold/60" />
+            Colophon
+          </p>
+          <h2 className="font-display text-vellum leading-[0.9] tracking-[-0.02em]">
+            <span className="block text-[clamp(3rem,11vw,9rem)]">Fragrance</span>
+            <span className="block font-display-italic text-[clamp(3rem,11vw,9rem)] text-gold -mt-2">
+              Parl.
+            </span>
+          </h2>
         </div>
 
-        {/* Bottom section with copyright */}
-        <div className="mt-6 border-t border-white/10 pt-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="text-xs text-white/50 uppercase tracking-[0.15em]">
-              © {new Date().getFullYear()} Fragrance Parl. All rights reserved.
+        {/* Columns */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-10 lg:gap-16">
+          {/* The House */}
+          <FooterColumn label="The House">
+            <FooterLink href="/">Maison</FooterLink>
+            <FooterLink href="/category">The Library</FooterLink>
+            <FooterLink href="/my_orders">Dossier</FooterLink>
+            <FooterLink href="/favorites">Favorites</FooterLink>
+          </FooterColumn>
+
+          {/* Account */}
+          <FooterColumn label="Account">
+            <FooterLink href="/my_profile">Profile</FooterLink>
+            <FooterLink href="/cart">Bag</FooterLink>
+            <FooterLink href="/login">Sign&nbsp;In</FooterLink>
+            <FooterLink href="/signup">Register</FooterLink>
+          </FooterColumn>
+
+          {/* Care */}
+          <FooterColumn label="Care">
+            <a
+              href="tel:+233550798770"
+              className="font-mono-spec text-xs text-bone hover:text-gold transition-colors duration-300"
+            >
+              +233&nbsp;550&nbsp;798&nbsp;770
+            </a>
+            <a
+              href="mailto:urfragranceparl@gmail.com"
+              className="font-mono-spec text-xs text-bone hover:text-gold transition-colors duration-300 break-all"
+            >
+              urfragranceparl@gmail.com
+            </a>
+            <p className="label-spec text-shadow pt-1">
+              Reply&nbsp;within&nbsp;24h
             </p>
-            <div className="flex items-center gap-6 text-xs text-white/50">
+          </FooterColumn>
+
+          {/* Connect */}
+          <FooterColumn label="Connect">
+            <div className="flex items-center gap-3">
+              <SocialLink href="https://instagram.com" label="Instagram">
+                <Instagram className="h-4 w-4" strokeWidth={1.5} />
+              </SocialLink>
+              <SocialLink href="https://facebook.com" label="Facebook">
+                <Facebook className="h-4 w-4" strokeWidth={1.5} />
+              </SocialLink>
+              <SocialLink href="https://twitter.com" label="Twitter">
+                <Twitter className="h-4 w-4" strokeWidth={1.5} />
+              </SocialLink>
+            </div>
+            <p className="label-spec text-shadow pt-3">
+              UPSA&nbsp;·&nbsp;KNUST&nbsp;·&nbsp;Accra
+            </p>
+          </FooterColumn>
+        </div>
+
+        {/* Press stamp */}
+        <div className="mt-20 pt-8 border-t border-gold/15">
+          <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-6">
+            <p className="font-mono-spec text-[10px] text-shadow tracking-[0.3em]">
+              © {new Date().getFullYear()}&nbsp;·&nbsp;Fragrance&nbsp;Parl&nbsp;·&nbsp;Established&nbsp;MMXXIV&nbsp;·&nbsp;Accra
+            </p>
+            <div className="flex items-center gap-6">
               <Link
                 href="/privacy"
-                className="transition-colors duration-300 hover:text-[#D4AF37]"
+                className="label-spec text-shadow hover:text-gold transition-colors duration-300"
               >
-                Privacy Policy
+                Privacy
               </Link>
+              <span className="text-shadow/30">·</span>
               <Link
                 href="/terms"
-                className="transition-colors duration-300 hover:text-[#D4AF37]"
+                className="label-spec text-shadow hover:text-gold transition-colors duration-300"
               >
-                Terms of Service
+                Terms
               </Link>
+              <span className="text-shadow/30">·</span>
               <a
                 href="https://neverknewnoble.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors duration-300 hover:text-[#D4AF37]"
+                className="label-spec text-shadow hover:text-gold transition-colors duration-300"
               >
-                Made by Noble
+                Composed&nbsp;by&nbsp;Noble
               </a>
             </div>
           </div>
@@ -137,3 +122,58 @@ export function Footer() {
   );
 }
 
+/* ─────────────────────────────────────────────────────────── */
+
+function FooterColumn({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="label-spec text-gold mb-3">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+function FooterLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="font-display-italic text-base text-bone hover:text-gold transition-colors duration-300 w-fit"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function SocialLink({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="flex h-10 w-10 items-center justify-center border border-gold/25 text-bone hover:text-gold hover:border-gold/60 transition-colors duration-300"
+    >
+      {children}
+    </a>
+  );
+}
